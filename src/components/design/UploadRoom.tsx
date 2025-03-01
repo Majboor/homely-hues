@@ -3,8 +3,13 @@ import { useState, useRef } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { analyzeRoomImage } from "../../services/interiorDesignApi";
 
-const UploadRoom = ({ onImageUploaded }: { onImageUploaded: (imageUrl: string) => void }) => {
+interface UploadRoomProps {
+  onImageUploaded: (imageUrl: string, originalFile?: File) => void;
+}
+
+const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
   const [dragActive, setDragActive] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -37,7 +42,7 @@ const UploadRoom = ({ onImageUploaded }: { onImageUploaded: (imageUrl: string) =
     }
   };
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     // Check if file is an image
     if (!file.type.match('image.*')) {
       toast.error("Please upload an image file");
@@ -46,18 +51,26 @@ const UploadRoom = ({ onImageUploaded }: { onImageUploaded: (imageUrl: string) =
 
     setUploading(true);
 
-    // Create a URL for the image
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) {
-        const imageUrl = e.target.result.toString();
-        setImage(imageUrl);
-        onImageUploaded(imageUrl);
-        setUploading(false);
-        toast.success("Image uploaded successfully");
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      // Create a URL for the image preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          const imageUrl = e.target.result.toString();
+          setImage(imageUrl);
+          onImageUploaded(imageUrl, file);
+        }
+      };
+      reader.readAsDataURL(file);
+      
+      // Send image to API for analysis (we'll handle the API response in the DesignSuggestion component)
+      toast.info("Analyzing your room...");
+    } catch (error) {
+      console.error("Error processing image:", error);
+      toast.error("Failed to process the image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const removeImage = () => {
