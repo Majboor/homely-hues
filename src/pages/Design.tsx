@@ -4,7 +4,7 @@ import Navbar from "../components/layout/Navbar";
 import UploadRoom from "../components/design/UploadRoom";
 import DesignSuggestion from "../components/design/DesignSuggestion";
 import { CustomButton } from "../components/ui/CustomButton";
-import { ArrowRight, Wand2 } from "lucide-react";
+import { ArrowRight, Wand } from "lucide-react";
 
 const Design = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -36,7 +36,7 @@ const Design = () => {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-medium">Design Suggestions</h2>
                 <CustomButton variant="outline" size="sm">
-                  <Wand2 className="mr-2 h-4 w-4" />
+                  <Wand className="mr-2 h-4 w-4" />
                   Regenerate
                 </CustomButton>
               </div>
@@ -56,7 +56,7 @@ const Design = () => {
           ) : (
             <div className="glass-panel rounded-xl p-8 text-center space-y-4 animate-fade-in">
               <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <Wand2 className="h-8 w-8 text-primary" />
+                <Wand className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-medium">Your design journey starts with an image</h3>
               <p className="text-muted-foreground max-w-md mx-auto">

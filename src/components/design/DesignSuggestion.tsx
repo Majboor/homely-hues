@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { CustomButton } from "../ui/CustomButton";
-import { ThumbsUp, ThumbsDown, Download, ArrowRight, ArrowLeft, Loader2, Palette, Sofa, Lightbulb, Layout, FileImage } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Download, ArrowRight, ArrowLeft, Loader2, Palette, Sofa, Lightbulb, Layout, FileImage, Wand } from "lucide-react";
 import { toast } from "sonner";
 import { analyzeRoomImage, RoomAnalysis } from "../../services/interiorDesignApi";
 
@@ -92,7 +92,7 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
     if (title.includes("Lighting")) return <Lightbulb className="h-5 w-5" />;
     if (title.includes("Layout")) return <Layout className="h-5 w-5" />;
     if (title.includes("Decor")) return <FileImage className="h-5 w-5" />;
-    return <Wand2 className="h-5 w-5" />;
+    return <Wand className="h-5 w-5" />;
   };
 
   return (
@@ -188,7 +188,7 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
                         ))}
                       </ul>
                     ) : (
-                      <p className="text-sm text-muted-foreground">{value}</p>
+                      <p className="text-sm text-muted-foreground">{String(value)}</p>
                     )}
                   </div>
                 ))}
