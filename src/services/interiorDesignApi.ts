@@ -1,8 +1,8 @@
 
 // Interior Design API Service
 
-// API endpoint
-const API_URL = "http://interior.techrealm.online/api/interior-design";
+// API endpoint - using HTTPS instead of HTTP
+const API_URL = "https://interior.techrealm.online/api/interior-design";
 
 export interface RoomAnalysis {
   room_details: {
@@ -29,6 +29,8 @@ export const analyzeRoomImage = async (imageFile: File): Promise<RoomAnalysis> =
     const formData = new FormData();
     formData.append("image", imageFile);
 
+    console.log("Sending request to:", API_URL);
+    
     const response = await fetch(API_URL, {
       method: "POST",
       body: formData,
@@ -36,7 +38,8 @@ export const analyzeRoomImage = async (imageFile: File): Promise<RoomAnalysis> =
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API Error (${response.status}): ${errorText}`);
+      console.error(`API Error (${response.status}):`, errorText);
+      throw new Error(`API Error (${response.status}): ${errorText || 'Failed to analyze room'}`);
     }
 
     const data = await response.json();

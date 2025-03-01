@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { ThumbsUp, ThumbsDown, Download, ArrowRight, ArrowLeft, Loader2, Palette, Sofa, Lightbulb, Layout, FileImage, Wand } from "lucide-react";
@@ -14,11 +13,13 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roomAnalysis, setRoomAnalysis] = useState<RoomAnalysis | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
   
   useEffect(() => {
     const analyzeRoom = async () => {
       try {
         setLoading(true);
+        setApiError(null);
         console.log("Analyzing room with image:", roomImage);
         console.log("Original file available:", !!originalFile);
         
@@ -96,7 +97,8 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
         toast.success("Room analysis complete!");
       } catch (error) {
         console.error("Error analyzing room:", error);
-        toast.error("Failed to analyze room. Please try again.");
+        setApiError("Failed to analyze room. Please try again later.");
+        toast.error("Failed to analyze room. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -123,7 +125,6 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
     toast.success("Design recommendations saved!");
   };
 
-  // Helper function to get icon based on card title
   const getCardIcon = (title: string) => {
     if (title.includes("Color")) return <Palette className="h-5 w-5" />;
     if (title.includes("Furniture")) return <Sofa className="h-5 w-5" />;
@@ -141,6 +142,22 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
         <p className="text-muted-foreground max-w-md">
           Our AI is analyzing your room and creating personalized interior design recommendations.
         </p>
+      </div>
+    );
+  }
+
+  if (apiError) {
+    return (
+      <div className="bg-white rounded-xl p-8 shadow-sm text-center">
+        <div className="p-6 text-center">
+          <h3 className="text-xl font-medium mb-4 text-red-500">Analysis Failed</h3>
+          <p className="text-muted-foreground mb-4">
+            {apiError}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Please try uploading a different image of your room or try again later.
+          </p>
+        </div>
       </div>
     );
   }
@@ -189,16 +206,14 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
             <p className="text-sm font-medium mb-2">Color Scheme</p>
             <div className="flex flex-wrap gap-2 mb-4">
               {room_details.color_scheme.map((color, idx) => {
-                // Extract the base color name (before any parenthesis)
                 const baseColor = color.split(' ')[0].toLowerCase();
                 let bgColor = baseColor;
                 
-                // Map color names to Tailwind colors
                 if (baseColor === 'yellow') bgColor = 'bg-yellow-400';
                 else if (baseColor === 'teal') bgColor = 'bg-teal-500';
                 else if (baseColor === 'brown') bgColor = 'bg-amber-800';
                 else if (baseColor === 'white') bgColor = 'bg-white';
-                else bgColor = 'bg-gray-300'; // Default fallback
+                else bgColor = 'bg-gray-300';
                 
                 return (
                   <div key={idx} className="flex flex-col items-center">
@@ -251,7 +266,6 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
         
         {/* Card Content */}
         <div className="bg-muted/30 p-4 rounded-lg mb-6">
-          {/* Card 1 - Room Analysis with detailed breakdown */}
           {currentCard.card === 1 && (
             <div>
               <p className="text-muted-foreground mb-4">Analysis of your current room:</p>
@@ -277,12 +291,10 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
             </div>
           )}
           
-          {/* Card 2 - Simple text content */}
           {currentCard.card === 2 && (
             <p className="text-muted-foreground">{typeof currentCard.content === 'string' ? currentCard.content : JSON.stringify(currentCard.content)}</p>
           )}
           
-          {/* Cards 3+ - Suggestion and Impact format */}
           {currentCard.card >= 3 && typeof currentCard.content === 'object' && 'suggestion' in currentCard.content && (
             <div className="space-y-4">
               <div>
