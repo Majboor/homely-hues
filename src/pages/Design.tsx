@@ -8,9 +8,22 @@ import { ArrowRight, Wand } from "lucide-react";
 
 const Design = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 
-  const handleImageUploaded = (imageUrl: string) => {
+  const handleImageUploaded = (imageUrl: string, file: File) => {
     setUploadedImage(imageUrl);
+    setUploadedFile(file);
+  };
+
+  const handleRegenerate = () => {
+    if (uploadedFile) {
+      // Force re-render of DesignSuggestion component
+      const tempImage = uploadedImage;
+      setUploadedImage(null);
+      setTimeout(() => {
+        setUploadedImage(tempImage);
+      }, 100);
+    }
   };
 
   return (
@@ -35,13 +48,13 @@ const Design = () => {
             <div className="animate-fade-in">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-medium">Design Suggestions</h2>
-                <CustomButton variant="outline" size="sm">
+                <CustomButton variant="outline" size="sm" onClick={handleRegenerate}>
                   <Wand className="mr-2 h-4 w-4" />
                   Regenerate
                 </CustomButton>
               </div>
               
-              <DesignSuggestion roomImage={uploadedImage} />
+              <DesignSuggestion roomImage={uploadedImage} originalFile={uploadedFile || undefined} />
               
               <div className="mt-8 text-center">
                 <p className="text-muted-foreground mb-4">

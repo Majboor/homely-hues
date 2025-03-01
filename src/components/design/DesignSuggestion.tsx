@@ -17,14 +17,81 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
   
   useEffect(() => {
     const analyzeRoom = async () => {
-      if (!originalFile) {
-        setLoading(false);
-        return; // Can't analyze without a file
-      }
-      
       try {
         setLoading(true);
+        console.log("Analyzing room with image:", roomImage);
+        console.log("Original file available:", !!originalFile);
+        
+        // For demonstration purposes, use mock data if originalFile is not available
+        if (!originalFile) {
+          // This is just for development/preview purposes
+          const mockData = {
+            room_details: {
+              room_type: "Bedroom",
+              current_style: "Modern with a warm and inviting atmosphere",
+              furniture: [
+                "Bed with teal upholstered headboard",
+                "Two nightstands with lamps",
+                "Wardrobe/storage unit",
+                "Decorative wall art frames",
+                "Rug on the floor",
+                "Potted plant"
+              ],
+              color_scheme: [
+                "Yellow",
+                "Teal",
+                "Brown",
+                "White"
+              ],
+              lighting: "Soft ambient lighting from bedside lamps and ceiling lights"
+            },
+            flashcards: [
+              {
+                card: 1,
+                title: "Current Room Analysis",
+                content: {
+                  colors: [
+                    "Yellow",
+                    "Teal",
+                    "Brown",
+                    "White"
+                  ],
+                  furniture: [
+                    "Bed with teal upholstered headboard",
+                    "Two nightstands with lamps",
+                    "Wardrobe/storage unit",
+                    "Decorative wall art frames",
+                    "Rug on the floor",
+                    "Potted plant"
+                  ],
+                  lighting: "Soft ambient lighting from bedside lamps and ceiling lights",
+                  room_type: "Bedroom",
+                  style: "Modern with a warm and inviting atmosphere"
+                }
+              },
+              {
+                card: 2,
+                title: "Design Assessment",
+                content: "The bedroom exudes a modern style with a warm and inviting atmosphere, thanks to the use of a cohesive color scheme and careful selection of furniture. However, there is potential for enhancing the space with a few adjustments to improve functionality and aesthetics."
+              },
+              {
+                card: 3,
+                title: "Suggestion: Layout",
+                content: {
+                  impact: "This change would enhance the room's functionality and visual appeal, making it feel more inviting.",
+                  suggestion: "Rearrange the bed to face the entrance to create a welcoming focal point and optimize the flow of the room."
+                }
+              }
+            ]
+          };
+          setRoomAnalysis(mockData as RoomAnalysis);
+          toast.success("Room analysis complete! (demo mode)");
+          setLoading(false);
+          return;
+        }
+        
         const result = await analyzeRoomImage(originalFile);
+        console.log("Analysis result:", result);
         setRoomAnalysis(result);
         toast.success("Room analysis complete!");
       } catch (error) {
@@ -36,7 +103,7 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
     };
     
     analyzeRoom();
-  }, [originalFile]);
+  }, [roomImage, originalFile]);
 
   const handlePrevious = () => {
     if (!roomAnalysis) return;
@@ -53,8 +120,17 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
   };
 
   const handleDownload = () => {
-    // In a real app, we might generate a PDF report or image
     toast.success("Design recommendations saved!");
+  };
+
+  // Helper function to get icon based on card title
+  const getCardIcon = (title: string) => {
+    if (title.includes("Color")) return <Palette className="h-5 w-5" />;
+    if (title.includes("Furniture")) return <Sofa className="h-5 w-5" />;
+    if (title.includes("Lighting")) return <Lightbulb className="h-5 w-5" />;
+    if (title.includes("Layout")) return <Layout className="h-5 w-5" />;
+    if (title.includes("Decor")) return <FileImage className="h-5 w-5" />;
+    return <Wand className="h-5 w-5" />;
   };
 
   if (loading) {
@@ -85,18 +161,9 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
   const currentCard = roomAnalysis.flashcards[currentIndex];
   const { room_details } = roomAnalysis;
 
-  // Helper function to get icon based on card title
-  const getCardIcon = (title: string) => {
-    if (title.includes("Color")) return <Palette className="h-5 w-5" />;
-    if (title.includes("Furniture")) return <Sofa className="h-5 w-5" />;
-    if (title.includes("Lighting")) return <Lightbulb className="h-5 w-5" />;
-    if (title.includes("Layout")) return <Layout className="h-5 w-5" />;
-    if (title.includes("Decor")) return <FileImage className="h-5 w-5" />;
-    return <Wand className="h-5 w-5" />;
-  };
-
   return (
     <div className="bg-white rounded-xl shadow-sm animate-scale-in overflow-hidden">
+      {/* Room Details Panel */}
       <div className="p-6 border-b">
         <div className="flex items-center gap-2 mb-2">
           <h3 className="text-xl font-medium">{room_details.room_type}</h3>
@@ -120,16 +187,28 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
           
           <div>
             <p className="text-sm font-medium mb-2">Color Scheme</p>
-            <div className="flex gap-2 mb-4">
-              {room_details.color_scheme.map((color, idx) => (
-                <div key={idx} className="flex flex-col items-center">
-                  <div 
-                    className="h-8 w-8 rounded-md border shadow-sm"
-                    style={{ backgroundColor: color.toLowerCase() }}
-                  />
-                  <span className="text-xs mt-1">{color}</span>
-                </div>
-              ))}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {room_details.color_scheme.map((color, idx) => {
+                // Extract the base color name (before any parenthesis)
+                const baseColor = color.split(' ')[0].toLowerCase();
+                let bgColor = baseColor;
+                
+                // Map color names to Tailwind colors
+                if (baseColor === 'yellow') bgColor = 'bg-yellow-400';
+                else if (baseColor === 'teal') bgColor = 'bg-teal-500';
+                else if (baseColor === 'brown') bgColor = 'bg-amber-800';
+                else if (baseColor === 'white') bgColor = 'bg-white';
+                else bgColor = 'bg-gray-300'; // Default fallback
+                
+                return (
+                  <div key={idx} className="flex flex-col items-center">
+                    <div 
+                      className={`h-8 w-8 rounded-md border shadow-sm ${bgColor}`}
+                    />
+                    <span className="text-xs mt-1 whitespace-nowrap">{color}</span>
+                  </div>
+                );
+              })}
             </div>
             
             <p className="text-sm font-medium mb-1">Lighting</p>
@@ -138,6 +217,7 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
         </div>
       </div>
       
+      {/* Flashcard Navigation and Content */}
       <div className="relative p-6">
         {/* Card Navigation */}
         <div className="flex items-center justify-between mb-4">
@@ -171,6 +251,7 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
         
         {/* Card Content */}
         <div className="bg-muted/30 p-4 rounded-lg mb-6">
+          {/* Card 1 - Room Analysis with detailed breakdown */}
           {currentCard.card === 1 && (
             <div>
               <p className="text-muted-foreground mb-4">Analysis of your current room:</p>
@@ -196,11 +277,13 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
             </div>
           )}
           
+          {/* Card 2 - Simple text content */}
           {currentCard.card === 2 && (
-            <p className="text-muted-foreground">{currentCard.content}</p>
+            <p className="text-muted-foreground">{typeof currentCard.content === 'string' ? currentCard.content : JSON.stringify(currentCard.content)}</p>
           )}
           
-          {currentCard.card >= 3 && (
+          {/* Cards 3+ - Suggestion and Impact format */}
+          {currentCard.card >= 3 && typeof currentCard.content === 'object' && 'suggestion' in currentCard.content && (
             <div className="space-y-4">
               <div>
                 <p className="text-sm font-medium mb-1">Suggestion</p>
