@@ -2,11 +2,11 @@
 /**
  * Creates a payment request to the payment gateway
  * @param amount The amount to charge in USD (will be converted to fils/cents)
- * @returns Payment link and reference
+ * @returns Payment URL and reference
  */
 export interface PaymentResponse {
-  payment_link: string;
-  payment_reference: string;
+  payment_url: string;
+  special_reference: string;
 }
 
 export const createPayment = async (amount: number): Promise<PaymentResponse> => {

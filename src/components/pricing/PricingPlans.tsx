@@ -13,8 +13,8 @@ const PricingPlans = () => {
       setIsLoading(true);
       const result = await createPayment(14); // $14 USD
       
-      // Redirect user to the payment page
-      window.location.href = result.payment_link;
+      // Redirect user to the payment page using the correct property name
+      window.location.href = result.payment_url;
       
     } catch (error) {
       console.error("Payment error:", error);
