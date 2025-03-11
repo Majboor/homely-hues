@@ -11,9 +11,8 @@ export interface PaymentResponse {
 
 export const createPayment = async (amount: number): Promise<PaymentResponse> => {
   try {
-    // Convert USD to cents (100 = 1 AED, so 1 USD = approx 367 fils)
-    // 14 USD ≈ 5142 fils
-    const amountInFils = Math.round(amount * 367.28);
+    // Use fixed amount of 5141 fils (approximately 14 USD)
+    const amountInFils = 5141;
     
     const response = await fetch('https://pay.techrealm.pk/create-payment', {
       method: 'POST',
