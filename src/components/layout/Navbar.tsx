@@ -28,6 +28,22 @@ const Navbar = () => {
     { name: "About", path: "/about" },
   ];
 
+  const scrollToPricing = () => {
+    // If we're not on the home page, navigate to it first
+    if (location.pathname !== '/') {
+      window.location.href = '/#pricing';
+    } else {
+      // Scroll to the pricing section
+      const pricingSection = document.getElementById('pricing');
+      if (pricingSection) {
+        pricingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    
+    // Close mobile menu if open
+    setMobileMenuOpen(false);
+  };
+
   return (
     <nav
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
@@ -63,8 +79,14 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+            <button
+              onClick={scrollToPricing}
+              className="underline-animation text-muted-foreground"
+            >
+              Pricing
+            </button>
           </div>
-          <CustomButton size="sm">Get Started</CustomButton>
+          <CustomButton size="sm" onClick={scrollToPricing}>Get Started</CustomButton>
         </div>
 
         {/* Mobile Menu Button */}
@@ -94,8 +116,14 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+            <button
+              onClick={scrollToPricing}
+              className="py-2 px-4 rounded-md text-muted-foreground text-left"
+            >
+              Pricing
+            </button>
             <div className="pt-2">
-              <CustomButton className="w-full">Get Started</CustomButton>
+              <CustomButton className="w-full" onClick={scrollToPricing}>Get Started</CustomButton>
             </div>
           </div>
         </div>

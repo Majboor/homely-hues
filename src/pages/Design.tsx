@@ -1,21 +1,45 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/layout/Navbar";
 import UploadRoom from "../components/design/UploadRoom";
 import DesignSuggestion from "../components/design/DesignSuggestion";
+import SubscriptionDialog from "../components/design/SubscriptionDialog";
 import { CustomButton } from "../components/ui/CustomButton";
 import { ArrowRight, Wand } from "lucide-react";
+import { hasUsedFreeDesign, markFreeDesignAsUsed } from "../services/userService";
+import { useNavigate } from "react-router-dom";
 
 const Design = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user has already used their free design when the page loads
+    const freeDesignUsed = hasUsedFreeDesign();
+    if (freeDesignUsed && !uploadedImage) {
+      setShowSubscriptionDialog(true);
+    }
+  }, [uploadedImage]);
 
   const handleImageUploaded = (imageUrl: string, file: File) => {
+    // If this is their first time, mark it as used
+    if (!hasUsedFreeDesign()) {
+      markFreeDesignAsUsed();
+    }
+    
     setUploadedImage(imageUrl);
     setUploadedFile(file);
   };
 
   const handleRegenerate = () => {
+    // If they've already used their free design, show subscription dialog
+    if (hasUsedFreeDesign()) {
+      setShowSubscriptionDialog(true);
+      return;
+    }
+
     if (uploadedFile) {
       // Force re-render of DesignSuggestion component
       const tempImage = uploadedImage;
@@ -24,6 +48,10 @@ const Design = () => {
         setUploadedImage(tempImage);
       }, 100);
     }
+  };
+
+  const scrollToPricing = () => {
+    navigate('/#pricing');
   };
 
   return (
@@ -60,8 +88,8 @@ const Design = () => {
                 <p className="text-muted-foreground mb-4">
                   Want to see more design options and detailed recommendations?
                 </p>
-                <CustomButton>
-                  Advanced Design Options
+                <CustomButton onClick={scrollToPricing}>
+                  Upgrade to Premium
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </CustomButton>
               </div>
@@ -75,10 +103,26 @@ const Design = () => {
               <p className="text-muted-foreground max-w-md mx-auto">
                 Upload a photo of your room above to see AI-generated design suggestions tailored to your space.
               </p>
+              {hasUsedFreeDesign() && (
+                <div className="mt-4 p-4 bg-primary/10 rounded-lg">
+                  <p className="font-medium mb-2">You've used your free design</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Upgrade to our Starter Package for unlimited designs
+                  </p>
+                  <CustomButton size="sm" onClick={scrollToPricing}>
+                    View Pricing
+                  </CustomButton>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+      
+      <SubscriptionDialog 
+        isOpen={showSubscriptionDialog} 
+        onClose={() => setShowSubscriptionDialog(false)} 
+      />
     </div>
   );
 };
