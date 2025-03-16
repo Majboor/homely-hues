@@ -78,8 +78,13 @@ const Design = () => {
   }, []);
 
   useEffect(() => {
+    // Only show subscription dialog if free trial is used, user is not subscribed, 
+    // and there's no active upload
     if (freeTrialUsed && !isSubscribed && !uploadedImage) {
       setShowSubscriptionDialog(true);
+    } else {
+      // Hide the dialog if conditions are not met (e.g., when user has free trial available)
+      setShowSubscriptionDialog(false);
     }
   }, [freeTrialUsed, isSubscribed, uploadedImage]);
 
@@ -102,17 +107,18 @@ const Design = () => {
     setFreeTrialUsed(trialUsed);
     setIsSubscribed(subscribed);
     
-    // Allow upload if user is subscribed OR hasn't used free trial
+    // Always allow if user is subscribed OR hasn't used free trial
     if (subscribed || !trialUsed) {
+      setUploadedImage(imageUrl);
+      if (file) setUploadedFile(file);
+      
       // Mark free trial as used if this is their first time and they're not subscribed
+      // Do this after successfully uploading to ensure they get their free design
       if (!trialUsed && !subscribed) {
         console.log("Marking free trial as used on first upload");
         await markFreeTrialAsUsed();
         setFreeTrialUsed(true);
       }
-      
-      setUploadedImage(imageUrl);
-      if (file) setUploadedFile(file);
     } else {
       toast.info("You've used your free design. Please upgrade to continue.");
       setShowSubscriptionDialog(true);

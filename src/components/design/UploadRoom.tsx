@@ -104,22 +104,24 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
       setFreeTrialUsed(trialUsed);
       setIsSubscribed(subscriptionStatus);
       
-      // Allow users with subscription OR users who haven't used their free trial
+      // Always allow the first try (when trialUsed is false) or if user is subscribed
       if (subscriptionStatus || !trialUsed) {
-        // If this is their first time using the free trial, mark it as used
-        if (!trialUsed && !subscriptionStatus) {
-          console.log("First time use - marking free trial as used");
-          await markFreeTrialAsUsed();
-          setFreeTrialUsed(true);
-          localStorage.setItem('freeDesignUsed', 'true');
-        }
-        
+        // If this is their first time using the free trial, mark it as used AFTER processing
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
           if (e.target?.result) {
             const imageUrl = e.target.result.toString();
             setImage(imageUrl);
             onImageUploaded(imageUrl, file);
+            
+            // Mark free trial as used only after successfully processing the image
+            // and only if this is their first time and they're not subscribed
+            if (!trialUsed && !subscriptionStatus) {
+              console.log("First time use - marking free trial as used");
+              await markFreeTrialAsUsed();
+              setFreeTrialUsed(true);
+              localStorage.setItem('freeDesignUsed', 'true');
+            }
           }
         };
         reader.readAsDataURL(file);

@@ -99,8 +99,9 @@ export const hasUsedFreeTrial = async () => {
           console.error('Error creating user subscription record:', insertError);
         }
         
-        return false;
+        return false; // New user should get free trial
       }
+      
       console.error('Error checking free trial usage:', error);
       return false; // Assume trial not used if there's an error
     }
