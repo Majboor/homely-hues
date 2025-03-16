@@ -59,14 +59,14 @@ export const isUserSubscribed = async () => {
  * Check if the trial has been used
  */
 export const hasUsedFreeTrial = async () => {
-  // If not logged in, use the local storage value
-  if (!(await isUserAuthenticated())) {
-    const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
-    console.log("hasUsedFreeTrial - local storage value:", localTrialUsed);
-    return localTrialUsed;
-  }
-  
   try {
+    // If not logged in, use the local storage value
+    if (!(await isUserAuthenticated())) {
+      const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
+      console.log("hasUsedFreeTrial - local storage value:", localTrialUsed);
+      return localTrialUsed;
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -83,26 +83,36 @@ export const hasUsedFreeTrial = async () => {
     
     if (error) {
       if (error.code === 'PGRST116') {
-        // No record found means trial has not been used yet
+        // No record found means trial has not been used yet - this is a new user
         console.log("hasUsedFreeTrial - no record found for user", user.id);
-        return false;
+        
+        // Create a record for the new user with free_trial_used set to false
+        const { error: insertError } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            is_subscribed: false,
+            free_trial_used: false
+          });
+          
+        if (insertError) {
+          console.error('Error creating user subscription record:', insertError);
+        }
+        
+        return false; // New user should get free trial
       }
-      throw error;
+      
+      console.error('Error checking free trial usage:', error);
+      return false; // Assume trial not used if there's an error
     }
     
-    // If subscription record exists, we need to determine if free trial was used
-    // If they're subscribed, it implies they've used the free trial
-    if (data && (data.is_subscribed || data.free_trial_used)) {
-      console.log("hasUsedFreeTrial - record found with is_subscribed:", data.is_subscribed, "free_trial_used:", data.free_trial_used);
-      return true;
-    }
-    
-    console.log("hasUsedFreeTrial - record exists but free trial not marked as used");
-    return false;
+    // If subscription record exists, check if free trial was used
+    console.log("hasUsedFreeTrial - record found with is_subscribed:", data.is_subscribed, "free_trial_used:", data.free_trial_used);
+    return data.free_trial_used === true;
   } catch (error) {
     console.error('Error checking if free trial used:', error);
-    // Fallback to local storage
-    return localStorage.getItem('freeDesignUsed') === 'true';
+    // Default to false for errors to ensure new users get their trial
+    return false;
   }
 };
 
@@ -163,6 +173,53 @@ export const markFreeTrialAsUsed = async () => {
     }
   } catch (error) {
     console.error('Error marking free trial as used:', error);
+  }
+};
+
+/**
+ * Reset free trial for a new user
+ */
+export const resetFreeTrial = async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return false;
+    }
+    
+    // Check if the user already has a subscription record
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+    
+    // If no record exists, create one with free_trial_used = false
+    if (!data) {
+      const { error: insertError } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          is_subscribed: false,
+          free_trial_used: false
+        });
+      
+      if (insertError) throw insertError;
+      
+      // Clear local storage flag for this user
+      localStorage.removeItem('freeDesignUsed');
+      
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error resetting free trial:', error);
+    return false;
   }
 };
 

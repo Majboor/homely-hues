@@ -13,7 +13,8 @@ import {
   markFreeTrialAsUsed, 
   isUserSubscribed, 
   isUserAuthenticated, 
-  requireAuth 
+  requireAuth,
+  resetFreeTrial
 } from "../services/subscriptionService";
 import { toast } from "sonner";
 
@@ -38,6 +39,9 @@ const Design = () => {
         setIsAuthenticated(authenticated);
         
         if (authenticated) {
+          // For newly registered users, ensure they get their free trial
+          await resetFreeTrial();
+          
           const [subscribed, trialUsed] = await Promise.all([
             isUserSubscribed(),
             hasUsedFreeTrial()
@@ -64,6 +68,7 @@ const Design = () => {
     checkUserStatus();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+      console.log("Auth state changed");
       checkUserStatus();
     });
     
@@ -73,8 +78,13 @@ const Design = () => {
   }, []);
 
   useEffect(() => {
+    // Only show subscription dialog if free trial is used, user is not subscribed, 
+    // and there's no active upload
     if (freeTrialUsed && !isSubscribed && !uploadedImage) {
       setShowSubscriptionDialog(true);
+    } else {
+      // Hide the dialog if conditions are not met (e.g., when user has free trial available)
+      setShowSubscriptionDialog(false);
     }
   }, [freeTrialUsed, isSubscribed, uploadedImage]);
 
@@ -97,17 +107,18 @@ const Design = () => {
     setFreeTrialUsed(trialUsed);
     setIsSubscribed(subscribed);
     
+    // Always allow if user is subscribed OR hasn't used free trial
     if (subscribed || !trialUsed) {
-      if (!trialUsed) {
-        await markFreeTrialAsUsed();
-        console.log("Marking free trial as used");
-        setFreeTrialUsed(true);
-        localStorage.setItem('freeDesignUsed', 'true');
-      }
-      
       setUploadedImage(imageUrl);
       if (file) setUploadedFile(file);
       
+      // Mark free trial as used if this is their first time and they're not subscribed
+      // Do this after successfully uploading to ensure they get their free design
+      if (!trialUsed && !subscribed) {
+        console.log("Marking free trial as used on first upload");
+        await markFreeTrialAsUsed();
+        setFreeTrialUsed(true);
+      }
     } else {
       toast.info("You've used your free design. Please upgrade to continue.");
       setShowSubscriptionDialog(true);
@@ -121,6 +132,9 @@ const Design = () => {
       return;
     }
     
+    // Prevent the default form submission behavior that might cause a refresh
+    e.stopPropagation();
+    
     if (isSubscribed || !freeTrialUsed) {
       if (uploadedFile) {
         const tempImage = uploadedImage;
@@ -128,6 +142,7 @@ const Design = () => {
         setUploadedImage(null);
         setUploadedFile(null);
         
+        // Use setTimeout to ensure state updates properly
         setTimeout(() => {
           setUploadedImage(tempImage);
           setUploadedFile(tempFile);
@@ -140,6 +155,7 @@ const Design = () => {
 
   const scrollToPricing = (e: React.MouseEvent) => {
     e.preventDefault();
+    // Use navigate instead of modifying window.location directly to prevent refresh
     navigate('/#pricing');
   };
 

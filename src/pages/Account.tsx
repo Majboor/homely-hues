@@ -11,7 +11,8 @@ import {
   Mail, 
   Clock, 
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  LogOut
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -64,12 +65,33 @@ const Account = () => {
     return format(new Date(dateString), "PPP");
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logged out successfully");
+      navigate("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast.error("Failed to log out");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
       <div className="container mx-auto px-4 py-16">
-        <h1 className="text-3xl font-bold mb-8">My Account</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">My Account</h1>
+          <Button 
+            variant="outline" 
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut size={16} />
+            Logout
+          </Button>
+        </div>
         
         {loading ? (
           <div className="flex justify-center items-center py-20">

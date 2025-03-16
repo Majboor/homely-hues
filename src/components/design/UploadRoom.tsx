@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial } from "@/services/subscriptionService";
+import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial, resetFreeTrial, markFreeTrialAsUsed } from "@/services/subscriptionService";
 
 interface UploadRoomProps {
   onImageUploaded: (imageUrl: string, originalFile?: File) => void;
@@ -23,6 +23,9 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
       try {
         const authenticated = await isUserAuthenticated();
         if (authenticated) {
+          // For newly registered users, ensure they get their free trial
+          await resetFreeTrial();
+          
           const [trialUsed, subscribed] = await Promise.all([
             hasUsedFreeTrial(),
             isUserSubscribed()
@@ -101,24 +104,32 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
       setFreeTrialUsed(trialUsed);
       setIsSubscribed(subscriptionStatus);
       
-      if (trialUsed && !subscriptionStatus) {
+      // Always allow the first try (when trialUsed is false) or if user is subscribed
+      if (subscriptionStatus || !trialUsed) {
+        // If this is their first time using the free trial, mark it as used AFTER processing
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          if (e.target?.result) {
+            const imageUrl = e.target.result.toString();
+            setImage(imageUrl);
+            onImageUploaded(imageUrl, file);
+            
+            // Mark free trial as used only after successfully processing the image
+            // and only if this is their first time and they're not subscribed
+            if (!trialUsed && !subscriptionStatus) {
+              console.log("First time use - marking free trial as used");
+              await markFreeTrialAsUsed();
+              setFreeTrialUsed(true);
+              localStorage.setItem('freeDesignUsed', 'true');
+            }
+          }
+        };
+        reader.readAsDataURL(file);
+        
+        toast.info("Analyzing your room...");
+      } else {
         toast.info("You've used your free design. Please upgrade to continue.");
-        setUploading(false);
-        setCheckingAuth(false);
-        return;
       }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          const imageUrl = e.target.result.toString();
-          setImage(imageUrl);
-          onImageUploaded(imageUrl, file);
-        }
-      };
-      reader.readAsDataURL(file);
-      
-      toast.info("Analyzing your room...");
     } catch (error) {
       console.error("Error processing image:", error);
       toast.error("Failed to process the image. Please try again.");
