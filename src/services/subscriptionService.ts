@@ -59,14 +59,14 @@ export const isUserSubscribed = async () => {
  * Check if the trial has been used
  */
 export const hasUsedFreeTrial = async () => {
-  // If not logged in, use the local storage value
-  if (!(await isUserAuthenticated())) {
-    const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
-    console.log("hasUsedFreeTrial - local storage value:", localTrialUsed);
-    return localTrialUsed;
-  }
-  
   try {
+    // If not logged in, use the local storage value
+    if (!(await isUserAuthenticated())) {
+      const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
+      console.log("hasUsedFreeTrial - local storage value:", localTrialUsed);
+      return localTrialUsed;
+    }
+    
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -105,13 +105,8 @@ export const hasUsedFreeTrial = async () => {
     }
     
     // If subscription record exists, check if free trial was used
-    if (data) {
-      console.log("hasUsedFreeTrial - record found with is_subscribed:", data.is_subscribed, "free_trial_used:", data.free_trial_used);
-      return data.free_trial_used === true;
-    }
-    
-    console.log("hasUsedFreeTrial - record exists but free trial not marked as used");
-    return false;
+    console.log("hasUsedFreeTrial - record found with is_subscribed:", data.is_subscribed, "free_trial_used:", data.free_trial_used);
+    return data.free_trial_used === true;
   } catch (error) {
     console.error('Error checking if free trial used:', error);
     // Fallback to local storage
@@ -216,22 +211,6 @@ export const resetFreeTrial = async () => {
       // Clear local storage flag for this user
       localStorage.removeItem('freeDesignUsed');
       
-      return true;
-    }
-    
-    // Reset the free trial only if it was previously used and user is not subscribed
-    if (data.free_trial_used && !data.is_subscribed) {
-      const { error: updateError } = await supabase
-        .from('user_subscriptions')
-        .update({ free_trial_used: false })
-        .eq('user_id', user.id);
-      
-      if (updateError) throw updateError;
-      
-      // Clear local storage flag
-      localStorage.removeItem('freeDesignUsed');
-      
-      console.log("Free trial reset for user", user.id);
       return true;
     }
     

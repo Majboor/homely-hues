@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial, resetFreeTrial } from "@/services/subscriptionService";
+import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial, resetFreeTrial, markFreeTrialAsUsed } from "@/services/subscriptionService";
 
 interface UploadRoomProps {
   onImageUploaded: (imageUrl: string, originalFile?: File) => void;
@@ -109,6 +109,11 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
         setUploading(false);
         setCheckingAuth(false);
         return;
+      }
+      
+      // If this is their first time using the free trial, mark it as used
+      if (!trialUsed && !subscriptionStatus) {
+        await markFreeTrialAsUsed();
       }
       
       const reader = new FileReader();

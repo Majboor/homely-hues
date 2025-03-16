@@ -67,8 +67,8 @@ const Design = () => {
     
     checkUserStatus();
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      console.log("Auth state changed:", event);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+      console.log("Auth state changed");
       checkUserStatus();
     });
     
@@ -103,7 +103,7 @@ const Design = () => {
     setIsSubscribed(subscribed);
     
     if (subscribed || !trialUsed) {
-      if (!trialUsed) {
+      if (!trialUsed && !subscribed) {
         await markFreeTrialAsUsed();
         console.log("Marking free trial as used");
         setFreeTrialUsed(true);
@@ -126,6 +126,9 @@ const Design = () => {
       return;
     }
     
+    // Prevent the default form submission behavior that might cause a refresh
+    e.stopPropagation();
+    
     if (isSubscribed || !freeTrialUsed) {
       if (uploadedFile) {
         const tempImage = uploadedImage;
@@ -133,6 +136,7 @@ const Design = () => {
         setUploadedImage(null);
         setUploadedFile(null);
         
+        // Use setTimeout to ensure state updates properly
         setTimeout(() => {
           setUploadedImage(tempImage);
           setUploadedFile(tempFile);
@@ -145,6 +149,7 @@ const Design = () => {
 
   const scrollToPricing = (e: React.MouseEvent) => {
     e.preventDefault();
+    // Use navigate instead of modifying window.location directly to prevent refresh
     navigate('/#pricing');
   };
 
