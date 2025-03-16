@@ -13,7 +13,8 @@ import {
   markFreeTrialAsUsed, 
   isUserSubscribed, 
   isUserAuthenticated, 
-  requireAuth 
+  requireAuth,
+  resetFreeTrial
 } from "../services/subscriptionService";
 import { toast } from "sonner";
 
@@ -38,6 +39,9 @@ const Design = () => {
         setIsAuthenticated(authenticated);
         
         if (authenticated) {
+          // For newly registered users, ensure they get their free trial
+          await resetFreeTrial();
+          
           const [subscribed, trialUsed] = await Promise.all([
             isUserSubscribed(),
             hasUsedFreeTrial()
@@ -63,7 +67,8 @@ const Design = () => {
     
     checkUserStatus();
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      console.log("Auth state changed:", event);
       checkUserStatus();
     });
     

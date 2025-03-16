@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial } from "@/services/subscriptionService";
+import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial, resetFreeTrial } from "@/services/subscriptionService";
 
 interface UploadRoomProps {
   onImageUploaded: (imageUrl: string, originalFile?: File) => void;
@@ -23,6 +23,9 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
       try {
         const authenticated = await isUserAuthenticated();
         if (authenticated) {
+          // For newly registered users, ensure they get their free trial
+          await resetFreeTrial();
+          
           const [trialUsed, subscribed] = await Promise.all([
             hasUsedFreeTrial(),
             isUserSubscribed()
