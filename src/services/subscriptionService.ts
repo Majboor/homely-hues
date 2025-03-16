@@ -116,6 +116,24 @@ export const isUserAuthenticated = async () => {
 };
 
 /**
+ * Redirect to auth page if user is not authenticated
+ * @returns boolean - true if user is authenticated, false if redirected
+ */
+export const requireAuth = (navigate) => {
+  return async () => {
+    const isAuthenticated = await isUserAuthenticated();
+    
+    if (!isAuthenticated) {
+      toast.info("Please log in to continue");
+      navigate('/auth');
+      return false;
+    }
+    
+    return true;
+  };
+};
+
+/**
  * Update user subscription to active status
  */
 export const activateUserSubscription = async (paymentReference: string, durationInDays: number = 30) => {

@@ -8,7 +8,14 @@ import SubscriptionDialog from "../components/design/SubscriptionDialog";
 import { CustomButton } from "../components/ui/CustomButton";
 import { ArrowRight, Wand, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { hasUsedFreeTrial, markFreeTrialAsUsed, isUserSubscribed } from "../services/subscriptionService";
+import { 
+  hasUsedFreeTrial, 
+  markFreeTrialAsUsed, 
+  isUserSubscribed, 
+  isUserAuthenticated, 
+  requireAuth 
+} from "../services/subscriptionService";
+import { toast } from "sonner";
 
 const Design = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -18,6 +25,9 @@ const Design = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [freeTrialUsed, setFreeTrialUsed] = useState(false);
   const navigate = useNavigate();
+
+  // Create auth check handler
+  const checkAuth = requireAuth(navigate);
 
   useEffect(() => {
     // Check authentication and subscription status
@@ -58,6 +68,13 @@ const Design = () => {
   }, [freeTrialUsed, isSubscribed, uploadedImage]);
 
   const handleImageUploaded = async (imageUrl: string, file: File) => {
+    // First check if user is authenticated
+    if (!isAuthenticated) {
+      toast.info("Please log in to upload images");
+      navigate('/auth');
+      return;
+    }
+    
     // Check if user is subscribed or hasn't used their free trial yet
     if (isSubscribed || !freeTrialUsed) {
       // If this is their first time, mark free trial as used
@@ -76,6 +93,11 @@ const Design = () => {
   };
 
   const handleRegenerate = async () => {
+    // Check if user is authenticated
+    if (!await checkAuth()) {
+      return;
+    }
+    
     // Check if user is subscribed or hasn't used their free trial
     if (isSubscribed || !freeTrialUsed) {
       if (uploadedFile) {
