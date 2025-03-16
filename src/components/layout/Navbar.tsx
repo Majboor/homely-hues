@@ -1,11 +1,13 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Menu, X, Crown, Sparkles, User, LogIn } from "lucide-react";
+import { Menu, X, Crown, Sparkles, User, LogIn, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isUserSubscribed } from "@/services/subscriptionService";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { toast } from "sonner";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -83,6 +85,18 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.success("Logged out successfully");
+      navigate("/");
+    } catch (error) {
+      console.error("Error logging out:", error);
+      toast.error("Failed to log out");
+    }
+    setMobileMenuOpen(false);
+  };
+
   return (
     <nav
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
@@ -135,6 +149,15 @@ const Navbar = () => {
               {isLoggedIn ? "Account" : "Login"}
               {isLoggedIn ? <User size={16} /> : <LogIn size={16} />}
             </button>
+            {isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className="underline-animation text-muted-foreground flex items-center gap-1"
+              >
+                Logout
+                <LogOut size={16} />
+              </button>
+            )}
           </div>
           
           {isPremium && isLoggedIn && (
@@ -212,6 +235,15 @@ const Navbar = () => {
               {isLoggedIn ? "Account" : "Login"}
               {isLoggedIn ? <User size={16} /> : <LogIn size={16} />}
             </button>
+            {isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className="py-2 px-4 rounded-md text-muted-foreground text-left flex items-center gap-2"
+              >
+                Logout
+                <LogOut size={16} />
+              </button>
+            )}
             <div className="pt-2">
               <CustomButton className="w-full" onClick={isLoggedIn ? handleAccountClick : scrollToPricing}>
                 {isPremium ? "Account" : "Get Started"}
