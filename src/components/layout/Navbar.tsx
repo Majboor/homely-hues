@@ -1,11 +1,12 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Menu, X, Crown, Sparkles } from "lucide-react";
+import { Menu, X, Crown, Sparkles, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isUserSubscribed } from "@/services/subscriptionService";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -13,6 +14,7 @@ const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -72,6 +74,15 @@ const Navbar = () => {
     // Close mobile menu if open
     setMobileMenuOpen(false);
   };
+  
+  const handleAccountClick = () => {
+    if (isLoggedIn) {
+      navigate("/account");
+    } else {
+      navigate("/auth");
+    }
+    setMobileMenuOpen(false);
+  };
 
   return (
     <nav
@@ -124,7 +135,19 @@ const Navbar = () => {
             </Badge>
           )}
           
-          <CustomButton size="sm" onClick={scrollToPricing}>
+          {isLoggedIn && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center gap-2" 
+              onClick={handleAccountClick}
+            >
+              <User size={18} />
+              <span className="hidden sm:inline">My Account</span>
+            </Button>
+          )}
+          
+          <CustomButton size="sm" onClick={isLoggedIn ? handleAccountClick : scrollToPricing}>
             {isPremium ? "Account" : "Get Started"}
           </CustomButton>
         </div>
@@ -136,6 +159,17 @@ const Navbar = () => {
               <Crown size={14} className="fill-amber-500" />
               <span className="text-xs font-medium">Premium</span>
             </Badge>
+          )}
+          
+          {isLoggedIn && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1" 
+              onClick={handleAccountClick}
+            >
+              <User size={18} />
+            </Button>
           )}
           
           <button
@@ -171,8 +205,17 @@ const Navbar = () => {
             >
               Pricing
             </button>
+            {isLoggedIn && (
+              <Link
+                to="/account"
+                className="py-2 px-4 rounded-md text-muted-foreground text-left flex items-center gap-2"
+              >
+                <User size={16} />
+                My Account
+              </Link>
+            )}
             <div className="pt-2">
-              <CustomButton className="w-full" onClick={scrollToPricing}>
+              <CustomButton className="w-full" onClick={isLoggedIn ? handleAccountClick : scrollToPricing}>
                 {isPremium ? "Account" : "Get Started"}
               </CustomButton>
             </div>
