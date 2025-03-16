@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CustomButton } from "../ui/CustomButton";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Crown } from "lucide-react";
 import { createPayment } from "../../services/paymentService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,7 +67,11 @@ const SubscriptionDialog = ({ isOpen, onClose }: SubscriptionDialogProps) => {
         </DialogHeader>
         
         <div className="py-4">
-          <div className="rounded-lg bg-primary/10 p-4 mb-6">
+          <div className="rounded-lg bg-primary/10 p-4 mb-6 relative">
+            <div className="absolute -top-3 right-4 flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-xs">
+              <Crown size={12} className="fill-amber-500" />
+              <span>Premium</span>
+            </div>
             <h3 className="font-medium mb-2">Starter Package</h3>
             <p className="text-2xl font-medium mb-1">$14<span className="text-sm text-muted-foreground">/month</span></p>
             <ul className="space-y-2 mt-4 text-sm">
@@ -95,7 +99,10 @@ const SubscriptionDialog = ({ isOpen, onClose }: SubscriptionDialogProps) => {
                   Processing...
                 </>
               ) : (
-                "Subscribe Now"
+                <>
+                  <Crown className="mr-2 h-4 w-4" />
+                  Subscribe Now
+                </>
               )}
             </CustomButton>
             <CustomButton 

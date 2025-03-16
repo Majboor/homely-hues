@@ -6,7 +6,7 @@ import UploadRoom from "../components/design/UploadRoom";
 import DesignSuggestion from "../components/design/DesignSuggestion";
 import SubscriptionDialog from "../components/design/SubscriptionDialog";
 import { CustomButton } from "../components/ui/CustomButton";
-import { ArrowRight, Wand } from "lucide-react";
+import { ArrowRight, Wand, Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { hasUsedFreeTrial, markFreeTrialAsUsed, isUserSubscribed } from "../services/subscriptionService";
 
@@ -108,13 +108,27 @@ const Design = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10 animate-fade-in">
             <h1 className="text-3xl md:text-4xl font-medium mb-4">Design Your Space</h1>
+            {isSubscribed && (
+              <div className="flex items-center justify-center gap-2 text-amber-500 mb-4">
+                <Crown size={20} className="fill-amber-500" />
+                <span className="font-medium">Premium Member</span>
+              </div>
+            )}
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Upload a photo of your room and our AI will generate personalized interior design suggestions.
             </p>
           </div>
           
           <div className="bg-white rounded-xl shadow-sm p-6 mb-8 animate-scale-in">
-            <h2 className="text-xl font-medium mb-4">Upload Your Room</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-medium">Upload Your Room</h2>
+              {isSubscribed && (
+                <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                  <Crown size={16} className="fill-amber-500" />
+                  <span className="text-sm font-medium">Premium</span>
+                </div>
+              )}
+            </div>
             <UploadRoom onImageUploaded={handleImageUploaded} />
           </div>
           
@@ -122,29 +136,47 @@ const Design = () => {
             <div className="animate-fade-in">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-medium">Design Suggestions</h2>
-                <CustomButton variant="outline" size="sm" onClick={handleRegenerate}>
-                  <Wand className="mr-2 h-4 w-4" />
-                  Regenerate
-                </CustomButton>
+                <div className="flex items-center gap-3">
+                  {isSubscribed && (
+                    <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                      <Crown size={16} className="fill-amber-500" />
+                      <span className="text-sm font-medium">Premium</span>
+                    </div>
+                  )}
+                  <CustomButton variant="outline" size="sm" onClick={handleRegenerate}>
+                    <Wand className="mr-2 h-4 w-4" />
+                    Regenerate
+                  </CustomButton>
+                </div>
               </div>
               
               <DesignSuggestion roomImage={uploadedImage} originalFile={uploadedFile || undefined} />
               
-              <div className="mt-8 text-center">
-                <p className="text-muted-foreground mb-4">
-                  Want to see more design options and detailed recommendations?
-                </p>
-                <CustomButton onClick={scrollToPricing}>
-                  Upgrade to Premium
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </CustomButton>
-              </div>
+              {!isSubscribed && (
+                <div className="mt-8 text-center">
+                  <p className="text-muted-foreground mb-4">
+                    Want to see more design options and detailed recommendations?
+                  </p>
+                  <CustomButton onClick={scrollToPricing}>
+                    Upgrade to Premium
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </CustomButton>
+                </div>
+              )}
             </div>
           ) : (
             <div className="glass-panel rounded-xl p-8 text-center space-y-4 animate-fade-in">
               <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                 <Wand className="h-8 w-8 text-primary" />
               </div>
+              
+              {isSubscribed && (
+                <div className="flex items-center justify-center gap-2 text-amber-500">
+                  <Crown size={20} className="fill-amber-500" />
+                  <span className="font-medium">Premium Unlimited Designs</span>
+                </div>
+              )}
+              
               <h3 className="text-xl font-medium">Your design journey starts with an image</h3>
               <p className="text-muted-foreground max-w-md mx-auto">
                 Upload a photo of your room above to see AI-generated design suggestions tailored to your space.

@@ -1,8 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { createPayment } from "../../services/paymentService";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,14 +14,14 @@ const PricingPlans = () => {
   const navigate = useNavigate();
 
   // Check subscription status
-  useState(() => {
+  useEffect(() => {
     const checkSubscription = async () => {
       const subscribed = await isUserSubscribed();
       setIsSubscribed(subscribed);
     };
     
     checkSubscription();
-  });
+  }, []);
 
   const checkAuthentication = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -103,9 +103,16 @@ const PricingPlans = () => {
           
           {/* Starter Plan */}
           <div className="bg-white rounded-xl shadow-sm p-8 border-2 border-primary relative transform hover:scale-105 transition-all">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground text-sm py-1 px-3 rounded-full">
-              Recommended
-            </div>
+            {isSubscribed ? (
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white text-sm py-1 px-3 rounded-full flex items-center gap-1">
+                <Crown size={14} className="fill-white" />
+                <span>Your Plan</span>
+              </div>
+            ) : (
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground text-sm py-1 px-3 rounded-full">
+                Recommended
+              </div>
+            )}
             
             <div className="mb-6">
               <h3 className="text-xl font-medium mb-2">Starter Package</h3>
@@ -147,7 +154,10 @@ const PricingPlans = () => {
                   Processing...
                 </>
               ) : isSubscribed ? (
-                "Current Plan"
+                <span className="flex items-center justify-center gap-2">
+                  <Crown size={16} className="fill-current" />
+                  Current Plan
+                </span>
               ) : (
                 "Subscribe Now"
               )}

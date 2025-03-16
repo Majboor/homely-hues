@@ -2,11 +2,15 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Crown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { isUserSubscribed } from "@/services/subscriptionService";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -21,6 +25,30 @@ const Navbar = () => {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+      
+      if (session) {
+        const subscribed = await isUserSubscribed();
+        setIsPremium(subscribed);
+      }
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+      checkAuth();
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const navLinks = [
     { name: "Home", path: "/" },
@@ -86,17 +114,36 @@ const Navbar = () => {
               Pricing
             </button>
           </div>
-          <CustomButton size="sm" onClick={scrollToPricing}>Get Started</CustomButton>
+          
+          {isPremium && isLoggedIn && (
+            <div className="flex items-center gap-2 text-amber-500 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+              <Crown size={16} className="fill-amber-500" />
+              <span className="text-sm font-medium">Premium</span>
+            </div>
+          )}
+          
+          <CustomButton size="sm" onClick={scrollToPricing}>
+            {isPremium ? "Account" : "Get Started"}
+          </CustomButton>
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="md:hidden flex items-center gap-3">
+          {isPremium && isLoggedIn && (
+            <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+              <Crown size={14} className="fill-amber-500" />
+              <span className="text-xs font-medium">Premium</span>
+            </div>
+          )}
+          
+          <button
+            className="p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -123,7 +170,9 @@ const Navbar = () => {
               Pricing
             </button>
             <div className="pt-2">
-              <CustomButton className="w-full" onClick={scrollToPricing}>Get Started</CustomButton>
+              <CustomButton className="w-full" onClick={scrollToPricing}>
+                {isPremium ? "Account" : "Get Started"}
+              </CustomButton>
             </div>
           </div>
         </div>
