@@ -104,29 +104,30 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
       setFreeTrialUsed(trialUsed);
       setIsSubscribed(subscriptionStatus);
       
-      if (trialUsed && !subscriptionStatus) {
-        toast.info("You've used your free design. Please upgrade to continue.");
-        setUploading(false);
-        setCheckingAuth(false);
-        return;
-      }
-      
-      // If this is their first time using the free trial, mark it as used
-      if (!trialUsed && !subscriptionStatus) {
-        await markFreeTrialAsUsed();
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          const imageUrl = e.target.result.toString();
-          setImage(imageUrl);
-          onImageUploaded(imageUrl, file);
+      // Allow users with subscription OR users who haven't used their free trial
+      if (subscriptionStatus || !trialUsed) {
+        // If this is their first time using the free trial, mark it as used
+        if (!trialUsed && !subscriptionStatus) {
+          console.log("First time use - marking free trial as used");
+          await markFreeTrialAsUsed();
+          setFreeTrialUsed(true);
+          localStorage.setItem('freeDesignUsed', 'true');
         }
-      };
-      reader.readAsDataURL(file);
-      
-      toast.info("Analyzing your room...");
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            const imageUrl = e.target.result.toString();
+            setImage(imageUrl);
+            onImageUploaded(imageUrl, file);
+          }
+        };
+        reader.readAsDataURL(file);
+        
+        toast.info("Analyzing your room...");
+      } else {
+        toast.info("You've used your free design. Please upgrade to continue.");
+      }
     } catch (error) {
       console.error("Error processing image:", error);
       toast.error("Failed to process the image. Please try again.");

@@ -101,7 +101,8 @@ export const hasUsedFreeTrial = async () => {
         
         return false;
       }
-      throw error;
+      console.error('Error checking free trial usage:', error);
+      return false; // Assume trial not used if there's an error
     }
     
     // If subscription record exists, check if free trial was used
@@ -109,8 +110,8 @@ export const hasUsedFreeTrial = async () => {
     return data.free_trial_used === true;
   } catch (error) {
     console.error('Error checking if free trial used:', error);
-    // Fallback to local storage
-    return localStorage.getItem('freeDesignUsed') === 'true';
+    // Default to false for errors to ensure new users get their trial
+    return false;
   }
 };
 

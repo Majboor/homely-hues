@@ -102,17 +102,17 @@ const Design = () => {
     setFreeTrialUsed(trialUsed);
     setIsSubscribed(subscribed);
     
+    // Allow upload if user is subscribed OR hasn't used free trial
     if (subscribed || !trialUsed) {
+      // Mark free trial as used if this is their first time and they're not subscribed
       if (!trialUsed && !subscribed) {
+        console.log("Marking free trial as used on first upload");
         await markFreeTrialAsUsed();
-        console.log("Marking free trial as used");
         setFreeTrialUsed(true);
-        localStorage.setItem('freeDesignUsed', 'true');
       }
       
       setUploadedImage(imageUrl);
       if (file) setUploadedFile(file);
-      
     } else {
       toast.info("You've used your free design. Please upgrade to continue.");
       setShowSubscriptionDialog(true);
