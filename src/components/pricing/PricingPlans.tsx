@@ -2,16 +2,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Check, Loader2, Crown, Sparkles, Shield, Beaker } from "lucide-react";
+import { Check, Loader2, Crown, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { createPayment } from "../../services/paymentService";
 import { supabase } from "@/integrations/supabase/client";
-import { isUserSubscribed, activateUserSubscription } from "@/services/subscriptionService";
+import { isUserSubscribed } from "@/services/subscriptionService";
 import { Badge } from "../ui/badge";
 
 const PricingPlans = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [isTestLoading, setIsTestLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
@@ -56,41 +55,6 @@ const PricingPlans = () => {
       toast.error("Sorry, we couldn't process your payment request. Please try again later.");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  // New function to handle test subscription
-  const handleTestSubscription = async () => {
-    try {
-      const isAuthenticated = await checkAuthentication();
-      
-      if (!isAuthenticated) {
-        toast.info("Please sign in to continue with your subscription");
-        navigate("/auth");
-        return;
-      }
-      
-      setIsTestLoading(true);
-      
-      // Create a mock payment reference for testing
-      const testPaymentId = `test-${Date.now()}`;
-      
-      // Directly activate the subscription with a 30-day duration
-      const success = await activateUserSubscription(testPaymentId, 30);
-      
-      if (success) {
-        toast.success("Test subscription activated successfully!");
-        
-        // Simulate payment callback by redirecting to success page
-        navigate("/payment-callback?success=true&txn_response_code=APPROVED&id=" + testPaymentId);
-      } else {
-        toast.error("Failed to activate test subscription");
-      }
-    } catch (error) {
-      console.error("Test subscription error:", error);
-      toast.error("Error creating test subscription");
-    } finally {
-      setIsTestLoading(false);
     }
   };
 
@@ -185,49 +149,26 @@ const PricingPlans = () => {
               </li>
             </ul>
             
-            <div className="space-y-3">
-              <CustomButton 
-                className="w-full"
-                onClick={handleSubscribe}
-                disabled={isLoading || isSubscribed}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : isSubscribed ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Crown size={16} className="fill-current" />
-                    Current Plan
-                    <Sparkles size={14} className="text-amber-500" />
-                  </span>
-                ) : (
-                  "Subscribe Now"
-                )}
-              </CustomButton>
-              
-              {isLoggedIn && !isSubscribed && (
-                <CustomButton 
-                  variant="outline"
-                  className="w-full flex items-center justify-center gap-2 text-violet-600 border-violet-200 hover:bg-violet-50"
-                  onClick={handleTestSubscription}
-                  disabled={isTestLoading}
-                >
-                  {isTestLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Activating...
-                    </>
-                  ) : (
-                    <>
-                      <Beaker size={16} className="text-violet-600" />
-                      Test Subscription (No Payment)
-                    </>
-                  )}
-                </CustomButton>
+            <CustomButton 
+              className="w-full"
+              onClick={handleSubscribe}
+              disabled={isLoading || isSubscribed}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : isSubscribed ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Crown size={16} className="fill-current" />
+                  Current Plan
+                  <Sparkles size={14} className="text-amber-500" />
+                </span>
+              ) : (
+                "Subscribe Now"
               )}
-            </div>
+            </CustomButton>
           </div>
           
           <div className="bg-white rounded-xl shadow-sm p-8 border border-border hover:border-primary/20 transition-all">
