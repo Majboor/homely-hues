@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
@@ -11,6 +12,7 @@ import { Badge } from "../ui/badge";
 const PricingPlans = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,7 +21,13 @@ const PricingPlans = () => {
       setIsSubscribed(subscribed);
     };
     
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    
     checkSubscription();
+    checkAuth();
   }, []);
 
   const checkAuthentication = async () => {
