@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
@@ -42,10 +43,15 @@ const Design = () => {
             hasUsedFreeTrial()
           ]);
           
+          console.log("Design page - Free trial used:", trialUsed);
+          console.log("Design page - Is subscribed:", subscribed);
+          
           setIsSubscribed(subscribed);
           setFreeTrialUsed(trialUsed);
         } else {
-          setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
+          const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
+          console.log("Design page - Local storage free trial used:", localTrialUsed);
+          setFreeTrialUsed(localTrialUsed);
         }
       } catch (error) {
         console.error("Error checking user status:", error);
@@ -79,10 +85,14 @@ const Design = () => {
       return;
     }
     
+    // Re-check the trial status before processing
     const [trialUsed, subscribed] = await Promise.all([
       hasUsedFreeTrial(),
       isUserSubscribed()
     ]);
+    
+    console.log("Before image upload - Free trial used:", trialUsed);
+    console.log("Before image upload - Is subscribed:", subscribed);
     
     setFreeTrialUsed(trialUsed);
     setIsSubscribed(subscribed);
@@ -90,6 +100,7 @@ const Design = () => {
     if (subscribed || !trialUsed) {
       if (!trialUsed) {
         await markFreeTrialAsUsed();
+        console.log("Marking free trial as used");
         setFreeTrialUsed(true);
         localStorage.setItem('freeDesignUsed', 'true');
       }

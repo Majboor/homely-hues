@@ -27,10 +27,14 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
             hasUsedFreeTrial(),
             isUserSubscribed()
           ]);
+          console.log("Free trial used:", trialUsed);
+          console.log("Is subscribed:", subscribed);
           setFreeTrialUsed(trialUsed);
           setIsSubscribed(subscribed);
         } else {
-          setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
+          const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
+          console.log("Local storage free trial used:", localTrialUsed);
+          setFreeTrialUsed(localTrialUsed);
         }
       } catch (error) {
         console.error("Error checking user subscription status:", error);
@@ -85,10 +89,14 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
         return;
       }
       
+      // Refresh the trial status before proceeding
       const [trialUsed, subscriptionStatus] = await Promise.all([
         hasUsedFreeTrial(),
         isUserSubscribed()
       ]);
+      
+      console.log("Checked before upload - Free trial used:", trialUsed);
+      console.log("Checked before upload - Is subscribed:", subscriptionStatus);
       
       setFreeTrialUsed(trialUsed);
       setIsSubscribed(subscriptionStatus);

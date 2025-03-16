@@ -61,24 +61,43 @@ export const isUserSubscribed = async () => {
 export const hasUsedFreeTrial = async () => {
   // If not logged in, use the local storage value
   if (!(await isUserAuthenticated())) {
-    return localStorage.getItem('freeDesignUsed') === 'true';
+    const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
+    console.log("hasUsedFreeTrial - local storage value:", localTrialUsed);
+    return localTrialUsed;
   }
   
   try {
-    const subscription = await getUserSubscription();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    // Either no subscription record (new user) or not subscribed
-    if (!subscription) {
-      // Fall back to localStorage
+    if (!user) {
+      console.log("hasUsedFreeTrial - no user found, using local storage");
       return localStorage.getItem('freeDesignUsed') === 'true';
     }
     
-    // If the user already has an active subscription, they've effectively used the free trial
-    if (subscription.is_subscribed) {
+    // Check the database
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No record found means trial has not been used yet
+        console.log("hasUsedFreeTrial - no record found for user", user.id);
+        return false;
+      }
+      throw error;
+    }
+    
+    // If subscription record exists, we need to determine if free trial was used
+    // If they're subscribed, it implies they've used the free trial
+    if (data && (data.is_subscribed || data.free_trial_used)) {
+      console.log("hasUsedFreeTrial - record found with is_subscribed:", data.is_subscribed, "free_trial_used:", data.free_trial_used);
       return true;
     }
     
-    // Check if the free trial was previously used
+    console.log("hasUsedFreeTrial - record exists but free trial not marked as used");
     return false;
   } catch (error) {
     console.error('Error checking if free trial used:', error);
@@ -93,6 +112,7 @@ export const hasUsedFreeTrial = async () => {
 export const markFreeTrialAsUsed = async () => {
   // Update local storage for all users (fallback mechanism)
   localStorage.setItem('freeDesignUsed', 'true');
+  console.log("markFreeTrialAsUsed - updated local storage");
   
   // If not authenticated, we can't update the database
   if (!(await isUserAuthenticated())) {
@@ -106,23 +126,40 @@ export const markFreeTrialAsUsed = async () => {
       return;
     }
     
-    // Get the current subscription
-    const subscription = await getUserSubscription();
+    console.log("markFreeTrialAsUsed - checking if record exists for user", user.id);
     
-    if (subscription) {
+    // Check if a record already exists for this user
+    const { data, error: checkError } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError;
+    }
+    
+    if (data) {
       // Update existing record
-      await supabase
+      console.log("markFreeTrialAsUsed - updating existing record");
+      const { error: updateError } = await supabase
         .from('user_subscriptions')
-        .update({ is_subscribed: false })
+        .update({ free_trial_used: true })
         .eq('user_id', user.id);
+      
+      if (updateError) throw updateError;
     } else {
       // Create a new record
-      await supabase
+      console.log("markFreeTrialAsUsed - creating new record");
+      const { error: insertError } = await supabase
         .from('user_subscriptions')
         .insert({
           user_id: user.id,
-          is_subscribed: false
+          is_subscribed: false,
+          free_trial_used: true
         });
+      
+      if (insertError) throw insertError;
     }
   } catch (error) {
     console.error('Error marking free trial as used:', error);
