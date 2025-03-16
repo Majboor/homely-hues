@@ -3,6 +3,7 @@ import { useState, useRef } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial } from "../services/subscriptionService";
 
 interface UploadRoomProps {
   onImageUploaded: (imageUrl: string, originalFile?: File) => void;
@@ -12,6 +13,7 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
   const [dragActive, setDragActive] = useState(false);
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -49,8 +51,31 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
     }
 
     setUploading(true);
+    setCheckingAuth(true);
 
     try {
+      // First check if user is authenticated
+      const isAuthenticated = await isUserAuthenticated();
+      if (!isAuthenticated) {
+        toast.info("Please log in to analyze rooms");
+        setUploading(false);
+        setCheckingAuth(false);
+        return;
+      }
+      
+      // Then check if user has used free trial and is not subscribed
+      const [freeTrialUsed, isSubscribed] = await Promise.all([
+        hasUsedFreeTrial(),
+        isUserSubscribed()
+      ]);
+      
+      if (freeTrialUsed && !isSubscribed) {
+        toast.info("You've used your free design. Please upgrade to continue.");
+        setUploading(false);
+        setCheckingAuth(false);
+        return;
+      }
+      
       // Create a URL for the image preview
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -70,6 +95,7 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
       toast.error("Failed to process the image. Please try again.");
     } finally {
       setUploading(false);
+      setCheckingAuth(false);
     }
   };
 
@@ -81,6 +107,11 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
     if (inputRef.current) {
       inputRef.current.value = '';
     }
+  };
+
+  const handleSelectImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    inputRef.current?.click();
   };
 
   return (
@@ -125,13 +156,13 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
               Drag and drop your image here, or click to browse. We recommend high-resolution images for the best results.
             </p>
             <CustomButton
-              onClick={() => inputRef.current?.click()}
-              disabled={uploading}
+              onClick={handleSelectImage}
+              disabled={uploading || checkingAuth}
             >
-              {uploading ? (
+              {uploading || checkingAuth ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
+                  {checkingAuth ? "Checking access..." : "Uploading..."}
                 </>
               ) : (
                 <>
@@ -147,7 +178,7 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
               className="hidden"
               onChange={handleChange}
               accept="image/*"
-              disabled={uploading}
+              disabled={uploading || checkingAuth}
             />
           </div>
         )}
