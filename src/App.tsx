@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Design from "./pages/Design";
 import Auth from "./pages/Auth";
 import PaymentCallback from "./pages/PaymentCallback";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/design" element={<Design />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/payment-callback" element={<PaymentCallback />} />
+          <Route path="/account" element={<Account />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
