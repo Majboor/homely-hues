@@ -1,19 +1,49 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createPayment } from "../../services/paymentService";
+import { supabase } from "@/integrations/supabase/client";
+import { isUserSubscribed } from "@/services/subscriptionService";
 
 const PricingPlans = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const navigate = useNavigate();
+
+  // Check subscription status
+  useState(() => {
+    const checkSubscription = async () => {
+      const subscribed = await isUserSubscribed();
+      setIsSubscribed(subscribed);
+    };
+    
+    checkSubscription();
+  });
+
+  const checkAuthentication = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
+  };
 
   const handleSubscribe = async () => {
     try {
+      // Check if user is authenticated first
+      const isAuthenticated = await checkAuthentication();
+      
+      if (!isAuthenticated) {
+        // Redirect to auth page if not authenticated
+        toast.info("Please sign in to continue with your subscription");
+        navigate("/auth");
+        return;
+      }
+      
       setIsLoading(true);
       const result = await createPayment(14); // $14 USD
       
-      // Redirect user to the payment page using the correct property name
+      // Redirect user to the payment page
       window.location.href = result.payment_url;
       
     } catch (error) {
@@ -67,7 +97,7 @@ const PricingPlans = () => {
               className="w-full"
               disabled={true}
             >
-              Current Plan
+              {isSubscribed ? "Included in Subscription" : "Current Plan"}
             </CustomButton>
           </div>
           
@@ -109,13 +139,15 @@ const PricingPlans = () => {
             <CustomButton 
               className="w-full"
               onClick={handleSubscribe}
-              disabled={isLoading}
+              disabled={isLoading || isSubscribed}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processing...
                 </>
+              ) : isSubscribed ? (
+                "Current Plan"
               ) : (
                 "Subscribe Now"
               )}

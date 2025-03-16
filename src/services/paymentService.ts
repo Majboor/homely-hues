@@ -14,12 +14,18 @@ export const createPayment = async (amount: number): Promise<PaymentResponse> =>
     // Use fixed amount of 5141 fils (approximately 14 USD)
     const amountInFils = 5141;
     
+    // Set the redirection URL to our payment callback page
+    const redirectionUrl = `${window.location.origin}/payment-callback`;
+    
     const response = await fetch('https://pay.techrealm.pk/create-payment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ amount: amountInFils }),
+      body: JSON.stringify({ 
+        amount: amountInFils,
+        redirection_url: redirectionUrl
+      }),
     });
 
     if (!response.ok) {

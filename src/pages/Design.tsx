@@ -1,57 +1,103 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import UploadRoom from "../components/design/UploadRoom";
 import DesignSuggestion from "../components/design/DesignSuggestion";
 import SubscriptionDialog from "../components/design/SubscriptionDialog";
 import { CustomButton } from "../components/ui/CustomButton";
 import { ArrowRight, Wand } from "lucide-react";
-import { hasUsedFreeDesign, markFreeDesignAsUsed } from "../services/userService";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { hasUsedFreeTrial, markFreeTrialAsUsed, isUserSubscribed } from "../services/subscriptionService";
 
 const Design = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [showSubscriptionDialog, setShowSubscriptionDialog] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [freeTrialUsed, setFreeTrialUsed] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user has already used their free design when the page loads
-    const freeDesignUsed = hasUsedFreeDesign();
-    if (freeDesignUsed && !uploadedImage) {
+    // Check authentication and subscription status
+    const checkUserStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const authenticated = !!session;
+      setIsAuthenticated(authenticated);
+      
+      if (authenticated) {
+        const subscribed = await isUserSubscribed();
+        setIsSubscribed(subscribed);
+        
+        const trialUsed = await hasUsedFreeTrial();
+        setFreeTrialUsed(trialUsed);
+      } else {
+        // For non-authenticated users, check local storage
+        setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
+      }
+    };
+    
+    checkUserStatus();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+      checkUserStatus();
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Show subscription dialog if user has used free trial and is not subscribed
+    if (freeTrialUsed && !isSubscribed && !uploadedImage) {
       setShowSubscriptionDialog(true);
     }
-  }, [uploadedImage]);
+  }, [freeTrialUsed, isSubscribed, uploadedImage]);
 
-  const handleImageUploaded = (imageUrl: string, file: File) => {
-    // If this is their first time, mark it as used
-    if (!hasUsedFreeDesign()) {
-      markFreeDesignAsUsed();
+  const handleImageUploaded = async (imageUrl: string, file: File) => {
+    // Check if user is subscribed or hasn't used their free trial yet
+    if (isSubscribed || !freeTrialUsed) {
+      // If this is their first time, mark free trial as used
+      if (!freeTrialUsed) {
+        await markFreeTrialAsUsed();
+        setFreeTrialUsed(true);
+      }
+      
+      // Set the uploaded image
+      setUploadedImage(imageUrl);
+      setUploadedFile(file);
+    } else {
+      // Show subscription dialog if they've used their free trial and aren't subscribed
+      setShowSubscriptionDialog(true);
     }
-    
-    setUploadedImage(imageUrl);
-    setUploadedFile(file);
   };
 
-  const handleRegenerate = () => {
-    // If they've already used their free design, show subscription dialog
-    if (hasUsedFreeDesign()) {
+  const handleRegenerate = async () => {
+    // Check if user is subscribed or hasn't used their free trial
+    if (isSubscribed || !freeTrialUsed) {
+      if (uploadedFile) {
+        // Force re-render of DesignSuggestion component
+        const tempImage = uploadedImage;
+        setUploadedImage(null);
+        setTimeout(() => {
+          setUploadedImage(tempImage);
+        }, 100);
+      }
+    } else {
+      // Show subscription dialog
       setShowSubscriptionDialog(true);
-      return;
-    }
-
-    if (uploadedFile) {
-      // Force re-render of DesignSuggestion component
-      const tempImage = uploadedImage;
-      setUploadedImage(null);
-      setTimeout(() => {
-        setUploadedImage(tempImage);
-      }, 100);
     }
   };
 
   const scrollToPricing = () => {
     navigate('/#pricing');
+  };
+
+  const redirectToAuth = () => {
+    navigate('/auth');
   };
 
   return (
@@ -103,7 +149,18 @@ const Design = () => {
               <p className="text-muted-foreground max-w-md mx-auto">
                 Upload a photo of your room above to see AI-generated design suggestions tailored to your space.
               </p>
-              {hasUsedFreeDesign() && (
+              
+              {!isAuthenticated ? (
+                <div className="mt-4 p-4 bg-primary/10 rounded-lg">
+                  <p className="font-medium mb-2">Create an account to save your designs</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Sign up for a free account to save your designs and access more features
+                  </p>
+                  <CustomButton size="sm" onClick={redirectToAuth}>
+                    Sign Up / Login
+                  </CustomButton>
+                </div>
+              ) : freeTrialUsed && !isSubscribed ? (
                 <div className="mt-4 p-4 bg-primary/10 rounded-lg">
                   <p className="font-medium mb-2">You've used your free design</p>
                   <p className="text-sm text-muted-foreground mb-3">
@@ -113,7 +170,7 @@ const Design = () => {
                     View Pricing
                   </CustomButton>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </div>

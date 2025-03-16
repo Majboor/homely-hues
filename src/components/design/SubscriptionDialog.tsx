@@ -1,10 +1,12 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CustomButton } from "../ui/CustomButton";
 import { Loader2, X } from "lucide-react";
 import { createPayment } from "../../services/paymentService";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -13,13 +15,30 @@ interface SubscriptionDialogProps {
 
 const SubscriptionDialog = ({ isOpen, onClose }: SubscriptionDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const checkAuthentication = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    return !!session;
+  };
 
   const handleSubscribe = async () => {
     try {
+      // Check if user is authenticated first
+      const isAuthenticated = await checkAuthentication();
+      
+      if (!isAuthenticated) {
+        // Redirect to auth page if not authenticated
+        toast.info("Please sign in to continue with your subscription");
+        navigate("/auth");
+        onClose();
+        return;
+      }
+      
       setIsLoading(true);
       const result = await createPayment(14); // $14 USD
       
-      // Redirect user to the payment page using the correct property name
+      // Redirect user to the payment page
       window.location.href = result.payment_url;
       
     } catch (error) {
