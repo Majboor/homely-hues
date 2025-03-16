@@ -1,8 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Menu, X, Crown, Sparkles, User } from "lucide-react";
+import { Menu, X, Crown, Sparkles, User, LogIn } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isUserSubscribed } from "@/services/subscriptionService";
 import { Badge } from "../ui/badge";
@@ -125,6 +124,17 @@ const Navbar = () => {
             >
               Pricing
             </button>
+            <button
+              onClick={handleAccountClick}
+              className={`underline-animation ${
+                location.pathname === "/account" || location.pathname === "/auth"
+                  ? "font-medium"
+                  : "text-muted-foreground"
+              } flex items-center gap-1`}
+            >
+              {isLoggedIn ? "Account" : "Login"}
+              {isLoggedIn ? <User size={16} /> : <LogIn size={16} />}
+            </button>
           </div>
           
           {isPremium && isLoggedIn && (
@@ -133,18 +143,6 @@ const Navbar = () => {
               <span className="text-sm font-medium">Premium</span>
               <Sparkles size={12} className="text-amber-500" />
             </Badge>
-          )}
-          
-          {isLoggedIn && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="flex items-center gap-2" 
-              onClick={handleAccountClick}
-            >
-              <User size={18} />
-              <span className="hidden sm:inline">My Account</span>
-            </Button>
           )}
           
           <CustomButton size="sm" onClick={isLoggedIn ? handleAccountClick : scrollToPricing}>
@@ -161,16 +159,14 @@ const Navbar = () => {
             </Badge>
           )}
           
-          {isLoggedIn && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="p-1" 
-              onClick={handleAccountClick}
-            >
-              <User size={18} />
-            </Button>
-          )}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="p-1" 
+            onClick={handleAccountClick}
+          >
+            {isLoggedIn ? <User size={18} /> : <LogIn size={18} />}
+          </Button>
           
           <button
             className="p-2"
@@ -205,15 +201,17 @@ const Navbar = () => {
             >
               Pricing
             </button>
-            {isLoggedIn && (
-              <Link
-                to="/account"
-                className="py-2 px-4 rounded-md text-muted-foreground text-left flex items-center gap-2"
-              >
-                <User size={16} />
-                My Account
-              </Link>
-            )}
+            <button
+              onClick={handleAccountClick}
+              className={`py-2 px-4 rounded-md ${
+                location.pathname === "/account" || location.pathname === "/auth"
+                  ? "bg-secondary font-medium"
+                  : "text-muted-foreground"
+              } text-left flex items-center gap-2`}
+            >
+              {isLoggedIn ? "Account" : "Login"}
+              {isLoggedIn ? <User size={16} /> : <LogIn size={16} />}
+            </button>
             <div className="pt-2">
               <CustomButton className="w-full" onClick={isLoggedIn ? handleAccountClick : scrollToPricing}>
                 {isPremium ? "Account" : "Get Started"}
