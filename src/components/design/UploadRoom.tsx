@@ -1,9 +1,8 @@
-
 import { useState, useRef } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial } from "../services/subscriptionService";
+import { isUserAuthenticated, isUserSubscribed, hasUsedFreeTrial } from "@/services/subscriptionService";
 
 interface UploadRoomProps {
   onImageUploaded: (imageUrl: string, originalFile?: File) => void;
@@ -44,7 +43,6 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
   };
 
   const handleFile = async (file: File) => {
-    // Check if file is an image
     if (!file.type.match('image.*')) {
       toast.error("Please upload an image file");
       return;
@@ -54,7 +52,6 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
     setCheckingAuth(true);
 
     try {
-      // First check if user is authenticated
       const isAuthenticated = await isUserAuthenticated();
       if (!isAuthenticated) {
         toast.info("Please log in to analyze rooms");
@@ -63,7 +60,6 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
         return;
       }
       
-      // Then check if user has used free trial and is not subscribed
       const [freeTrialUsed, isSubscribed] = await Promise.all([
         hasUsedFreeTrial(),
         isUserSubscribed()
@@ -76,19 +72,16 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
         return;
       }
       
-      // Create a URL for the image preview
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
           const imageUrl = e.target.result.toString();
           setImage(imageUrl);
-          // Make sure we're passing the file to the parent component
           onImageUploaded(imageUrl, file);
         }
       };
       reader.readAsDataURL(file);
       
-      // Send image to API for analysis (we'll handle the API response in the DesignSuggestion component)
       toast.info("Analyzing your room...");
     } catch (error) {
       console.error("Error processing image:", error);
@@ -100,7 +93,6 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
   };
 
   const removeImage = (e: React.MouseEvent) => {
-    // Prevent default behavior to avoid page refresh
     e.preventDefault();
     e.stopPropagation();
     setImage(null);
