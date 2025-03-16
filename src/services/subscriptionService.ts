@@ -152,3 +152,41 @@ export const activateUserSubscription = async (paymentReference: string, duratio
     return false;
   }
 };
+
+/**
+ * Verify payment by payment ID
+ * Used as a fallback when the redirect doesn't provide all needed information
+ */
+export const verifyPaymentById = async (paymentId: string): Promise<boolean> => {
+  try {
+    if (!paymentId) {
+      console.error('No payment ID provided for verification');
+      return false;
+    }
+
+    const response = await fetch(`https://pay.techrealm.pk/verify-payment/${paymentId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Payment verification failed with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Payment verification response:', data);
+    
+    if (data.status === 'success' || data.status === 'APPROVED') {
+      // Payment was successful
+      const activated = await activateUserSubscription(paymentId);
+      return activated;
+    } else {
+      return false;
+    }
+  } catch (error) {
+    console.error('Error verifying payment:', error);
+    return false;
+  }
+};

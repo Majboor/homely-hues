@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2, Check, AlertTriangle } from "lucide-react";
 import { CustomButton } from "@/components/ui/CustomButton";
-import { activateUserSubscription } from "@/services/subscriptionService";
+import { activateUserSubscription, verifyPaymentById } from "@/services/subscriptionService";
 import Navbar from "@/components/layout/Navbar";
 
 const PaymentCallback = () => {
@@ -24,7 +24,7 @@ const PaymentCallback = () => {
         console.log('Payment verification:', { success, message, responseCode, paymentId });
         
         if (success && (message === 'Approved' || responseCode === 'APPROVED')) {
-          // Payment successful
+          // Payment successful via redirect
           if (paymentId) {
             // Activate the user's subscription
             const activated = await activateUserSubscription(paymentId);
@@ -39,6 +39,22 @@ const PaymentCallback = () => {
           } else {
             setStatus('error');
             setMessage('Payment was successful but no payment ID was found. Please contact support with your transaction details.');
+          }
+        } else if (paymentId) {
+          // Try fallback verification if we have a payment ID but success status is not clear
+          console.log('Attempting fallback payment verification for ID:', paymentId);
+          const verificationSuccess = await verifyPaymentById(paymentId);
+          
+          if (verificationSuccess) {
+            setStatus('success');
+            setMessage('Your payment has been successfully verified! Your subscription is now active.');
+            // Wait 3 seconds then redirect to account page
+            setTimeout(() => {
+              navigate('/account');
+            }, 3000);
+          } else {
+            setStatus('error');
+            setMessage('We could not verify your payment. Please contact support with your payment ID.');
           }
         } else {
           // Payment failed or canceled
@@ -58,7 +74,7 @@ const PaymentCallback = () => {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [searchParams]);
+  }, [searchParams, navigate]);
 
   return (
     <div className="min-h-screen bg-secondary/30">
@@ -85,8 +101,8 @@ const PaymentCallback = () => {
               <p className="text-muted-foreground mb-6">
                 {message}
               </p>
-              <CustomButton onClick={() => navigate('/design')}>
-                Start Designing
+              <CustomButton onClick={() => navigate('/account')}>
+                View My Account
               </CustomButton>
             </>
           )}
