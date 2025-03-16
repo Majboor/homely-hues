@@ -1,13 +1,20 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Crown, Sparkles, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { isUserSubscribed } from "@/services/subscriptionService";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,11 +29,60 @@ const Navbar = () => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    // Check authentication status
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+      
+      if (session) {
+        const subscribed = await isUserSubscribed();
+        setIsPremium(subscribed);
+      }
+    };
+    
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
+      checkAuth();
+    });
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const navLinks = [
     { name: "Home", path: "/" },
     { name: "Design", path: "/design" },
     { name: "About", path: "/about" },
   ];
+
+  const scrollToPricing = () => {
+    // If we're not on the home page, navigate to it first
+    if (location.pathname !== '/') {
+      window.location.href = '/#pricing';
+    } else {
+      // Scroll to the pricing section
+      const pricingSection = document.getElementById('pricing');
+      if (pricingSection) {
+        pricingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    
+    // Close mobile menu if open
+    setMobileMenuOpen(false);
+  };
+  
+  const handleAccountClick = () => {
+    if (isLoggedIn) {
+      navigate("/account");
+    } else {
+      navigate("/auth");
+    }
+    setMobileMenuOpen(false);
+  };
 
   return (
     <nav
@@ -63,18 +119,67 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+            <button
+              onClick={scrollToPricing}
+              className="underline-animation text-muted-foreground"
+            >
+              Pricing
+            </button>
           </div>
-          <CustomButton size="sm">Get Started</CustomButton>
+          
+          {isPremium && isLoggedIn && (
+            <Badge variant="outline" className="flex items-center gap-2 text-amber-500 bg-amber-50 px-3 py-1 border border-amber-200">
+              <Crown size={16} className="fill-amber-500" />
+              <span className="text-sm font-medium">Premium</span>
+              <Sparkles size={12} className="text-amber-500" />
+            </Badge>
+          )}
+          
+          {isLoggedIn && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="flex items-center gap-2" 
+              onClick={handleAccountClick}
+            >
+              <User size={18} />
+              <span className="hidden sm:inline">My Account</span>
+            </Button>
+          )}
+          
+          <CustomButton size="sm" onClick={isLoggedIn ? handleAccountClick : scrollToPricing}>
+            {isPremium ? "Account" : "Get Started"}
+          </CustomButton>
         </div>
 
         {/* Mobile Menu Button */}
-        <button
-          className="md:hidden p-2"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="md:hidden flex items-center gap-3">
+          {isPremium && isLoggedIn && (
+            <Badge variant="outline" className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-1 border border-amber-200">
+              <Crown size={14} className="fill-amber-500" />
+              <span className="text-xs font-medium">Premium</span>
+            </Badge>
+          )}
+          
+          {isLoggedIn && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="p-1" 
+              onClick={handleAccountClick}
+            >
+              <User size={18} />
+            </Button>
+          )}
+          
+          <button
+            className="p-2"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -94,8 +199,25 @@ const Navbar = () => {
                 {link.name}
               </Link>
             ))}
+            <button
+              onClick={scrollToPricing}
+              className="py-2 px-4 rounded-md text-muted-foreground text-left"
+            >
+              Pricing
+            </button>
+            {isLoggedIn && (
+              <Link
+                to="/account"
+                className="py-2 px-4 rounded-md text-muted-foreground text-left flex items-center gap-2"
+              >
+                <User size={16} />
+                My Account
+              </Link>
+            )}
             <div className="pt-2">
-              <CustomButton className="w-full">Get Started</CustomButton>
+              <CustomButton className="w-full" onClick={isLoggedIn ? handleAccountClick : scrollToPricing}>
+                {isPremium ? "Account" : "Get Started"}
+              </CustomButton>
             </div>
           </div>
         </div>

@@ -1,15 +1,24 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
 import { ArrowRight } from "lucide-react";
 
 const Hero = () => {
   const [isLoaded, setIsLoaded] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsLoaded(true);
   }, []);
+
+  const scrollToPricing = () => {
+    // Scroll to the pricing section
+    const pricingSection = document.getElementById('pricing');
+    if (pricingSection) {
+      pricingSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
     <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
@@ -37,8 +46,8 @@ const Hero = () => {
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </CustomButton>
               </Link>
-              <CustomButton variant="outline" size="lg">
-                See Examples
+              <CustomButton variant="outline" size="lg" onClick={scrollToPricing}>
+                See Pricing
               </CustomButton>
             </div>
           </div>
