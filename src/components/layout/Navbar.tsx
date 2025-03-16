@@ -2,9 +2,10 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Menu, X, Crown } from "lucide-react";
+import { Menu, X, Crown, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { isUserSubscribed } from "@/services/subscriptionService";
+import { Badge } from "../ui/badge";
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -116,10 +117,11 @@ const Navbar = () => {
           </div>
           
           {isPremium && isLoggedIn && (
-            <div className="flex items-center gap-2 text-amber-500 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            <Badge variant="outline" className="flex items-center gap-2 text-amber-500 bg-amber-50 px-3 py-1 border border-amber-200">
               <Crown size={16} className="fill-amber-500" />
               <span className="text-sm font-medium">Premium</span>
-            </div>
+              <Sparkles size={12} className="text-amber-500" />
+            </Badge>
           )}
           
           <CustomButton size="sm" onClick={scrollToPricing}>
@@ -130,10 +132,10 @@ const Navbar = () => {
         {/* Mobile Menu Button */}
         <div className="md:hidden flex items-center gap-3">
           {isPremium && isLoggedIn && (
-            <div className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-1 rounded-full border border-amber-200">
+            <Badge variant="outline" className="flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-1 border border-amber-200">
               <Crown size={14} className="fill-amber-500" />
               <span className="text-xs font-medium">Premium</span>
-            </div>
+            </Badge>
           )}
           
           <button

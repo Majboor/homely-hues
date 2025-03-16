@@ -3,10 +3,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { CustomButton } from "../ui/CustomButton";
-import { Loader2, X, Crown } from "lucide-react";
+import { Loader2, X, Crown, Sparkles, Shield } from "lucide-react";
 import { createPayment } from "../../services/paymentService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "../ui/badge";
 
 interface SubscriptionDialogProps {
   isOpen: boolean;
@@ -53,7 +54,10 @@ const SubscriptionDialog = ({ isOpen, onClose }: SubscriptionDialogProps) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">Upgrade to Premium</DialogTitle>
+          <DialogTitle className="text-xl flex items-center gap-2">
+            Upgrade to Premium 
+            <Sparkles size={16} className="text-amber-500" />
+          </DialogTitle>
           <DialogDescription className="text-muted-foreground">
             You've used your free design. Upgrade to continue designing more rooms.
           </DialogDescription>
@@ -68,21 +72,24 @@ const SubscriptionDialog = ({ isOpen, onClose }: SubscriptionDialogProps) => {
         
         <div className="py-4">
           <div className="rounded-lg bg-primary/10 p-4 mb-6 relative">
-            <div className="absolute -top-3 right-4 flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-xs">
+            <Badge variant="outline" className="absolute -top-3 right-4 flex items-center gap-1 text-amber-500 bg-amber-50 px-2 py-0.5 border border-amber-200 text-xs">
               <Crown size={12} className="fill-amber-500" />
               <span>Premium</span>
-            </div>
+            </Badge>
             <h3 className="font-medium mb-2">Starter Package</h3>
             <p className="text-2xl font-medium mb-1">$14<span className="text-sm text-muted-foreground">/month</span></p>
             <ul className="space-y-2 mt-4 text-sm">
               <li className="flex items-start gap-2">
-                <span>• Unlimited room analyses</span>
+                <Shield size={16} className="text-primary mt-0.5" />
+                <span>Unlimited room analyses</span>
               </li>
               <li className="flex items-start gap-2">
-                <span>• Detailed design recommendations</span>
+                <Shield size={16} className="text-primary mt-0.5" />
+                <span>Detailed design recommendations</span>
               </li>
               <li className="flex items-start gap-2">
-                <span>• Download design reports</span>
+                <Shield size={16} className="text-primary mt-0.5" />
+                <span>Download design reports</span>
               </li>
             </ul>
           </div>

@@ -1,19 +1,18 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomButton } from "../ui/CustomButton";
-import { Check, Loader2, Crown } from "lucide-react";
+import { Check, Loader2, Crown, Sparkles, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { createPayment } from "../../services/paymentService";
 import { supabase } from "@/integrations/supabase/client";
 import { isUserSubscribed } from "@/services/subscriptionService";
+import { Badge } from "../ui/badge";
 
 const PricingPlans = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const navigate = useNavigate();
 
-  // Check subscription status
   useEffect(() => {
     const checkSubscription = async () => {
       const subscribed = await isUserSubscribed();
@@ -30,20 +29,17 @@ const PricingPlans = () => {
 
   const handleSubscribe = async () => {
     try {
-      // Check if user is authenticated first
       const isAuthenticated = await checkAuthentication();
       
       if (!isAuthenticated) {
-        // Redirect to auth page if not authenticated
         toast.info("Please sign in to continue with your subscription");
         navigate("/auth");
         return;
       }
       
       setIsLoading(true);
-      const result = await createPayment(14); // $14 USD
+      const result = await createPayment(14);
       
-      // Redirect user to the payment page
       window.location.href = result.payment_url;
       
     } catch (error) {
@@ -65,7 +61,6 @@ const PricingPlans = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {/* Free Plan */}
           <div className="bg-white rounded-xl shadow-sm p-8 border border-border hover:border-primary/20 transition-all">
             <div className="mb-6">
               <h3 className="text-xl font-medium mb-2">Free Trial</h3>
@@ -101,13 +96,13 @@ const PricingPlans = () => {
             </CustomButton>
           </div>
           
-          {/* Starter Plan */}
           <div className="bg-white rounded-xl shadow-sm p-8 border-2 border-primary relative transform hover:scale-105 transition-all">
             {isSubscribed ? (
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white text-sm py-1 px-3 rounded-full flex items-center gap-1">
+              <Badge variant="outline" className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-amber-500 text-white text-sm py-1 px-3 rounded-full flex items-center gap-1">
                 <Crown size={14} className="fill-white" />
                 <span>Your Plan</span>
-              </div>
+                <Sparkles size={12} className="text-white" />
+              </Badge>
             ) : (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground text-sm py-1 px-3 rounded-full">
                 Recommended
@@ -115,7 +110,10 @@ const PricingPlans = () => {
             )}
             
             <div className="mb-6">
-              <h3 className="text-xl font-medium mb-2">Starter Package</h3>
+              <h3 className="text-xl font-medium mb-2 flex items-center gap-2">
+                Starter Package
+                {isSubscribed && <Crown size={16} className="fill-amber-500" />}
+              </h3>
               <p className="text-muted-foreground text-sm">Perfect for home owners</p>
             </div>
             
@@ -126,19 +124,19 @@ const PricingPlans = () => {
             
             <ul className="space-y-3 mb-8">
               <li className="flex items-start gap-2">
-                <Check className="h-5 w-5 text-primary mt-0.5" />
+                <Shield className="h-5 w-5 text-primary mt-0.5" />
                 <span>Unlimited room analyses</span>
               </li>
               <li className="flex items-start gap-2">
-                <Check className="h-5 w-5 text-primary mt-0.5" />
+                <Shield className="h-5 w-5 text-primary mt-0.5" />
                 <span>Detailed design recommendations</span>
               </li>
               <li className="flex items-start gap-2">
-                <Check className="h-5 w-5 text-primary mt-0.5" />
+                <Shield className="h-5 w-5 text-primary mt-0.5" />
                 <span>Download design reports</span>
               </li>
               <li className="flex items-start gap-2">
-                <Check className="h-5 w-5 text-primary mt-0.5" />
+                <Shield className="h-5 w-5 text-primary mt-0.5" />
                 <span>Priority support</span>
               </li>
             </ul>
@@ -157,6 +155,7 @@ const PricingPlans = () => {
                 <span className="flex items-center justify-center gap-2">
                   <Crown size={16} className="fill-current" />
                   Current Plan
+                  <Sparkles size={14} className="text-amber-500" />
                 </span>
               ) : (
                 "Subscribe Now"
@@ -164,7 +163,6 @@ const PricingPlans = () => {
             </CustomButton>
           </div>
           
-          {/* Professional Plan */}
           <div className="bg-white rounded-xl shadow-sm p-8 border border-border hover:border-primary/20 transition-all">
             <div className="mb-6">
               <h3 className="text-xl font-medium mb-2">Professional</h3>
