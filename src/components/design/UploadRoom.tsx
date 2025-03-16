@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,7 +18,7 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useState(() => {
+  useEffect(() => {
     const checkUserStatus = async () => {
       try {
         const authenticated = await isUserAuthenticated();
