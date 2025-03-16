@@ -13,7 +13,31 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
   const [image, setImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(false);
+  const [freeTrialUsed, setFreeTrialUsed] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useState(() => {
+    const checkUserStatus = async () => {
+      try {
+        const authenticated = await isUserAuthenticated();
+        if (authenticated) {
+          const [trialUsed, subscribed] = await Promise.all([
+            hasUsedFreeTrial(),
+            isUserSubscribed()
+          ]);
+          setFreeTrialUsed(trialUsed);
+          setIsSubscribed(subscribed);
+        } else {
+          setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
+        }
+      } catch (error) {
+        console.error("Error checking user subscription status:", error);
+      }
+    };
+    
+    checkUserStatus();
+  }, []);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -60,12 +84,15 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
         return;
       }
       
-      const [freeTrialUsed, isSubscribed] = await Promise.all([
+      const [trialUsed, subscriptionStatus] = await Promise.all([
         hasUsedFreeTrial(),
         isUserSubscribed()
       ]);
       
-      if (freeTrialUsed && !isSubscribed) {
+      setFreeTrialUsed(trialUsed);
+      setIsSubscribed(subscriptionStatus);
+      
+      if (trialUsed && !subscriptionStatus) {
         toast.info("You've used your free design. Please upgrade to continue.");
         setUploading(false);
         setCheckingAuth(false);
@@ -119,7 +146,23 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
         onDragOver={handleDrag}
         onDrop={handleDrop}
       >
-        {image ? (
+        {freeTrialUsed && !isSubscribed && !image ? (
+          <div className="flex flex-col items-center justify-center text-center p-8">
+            <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+              <Upload className="h-8 w-8 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">Free Trial Used</h3>
+            <p className="text-muted-foreground mb-6 max-w-md">
+              You've already used your free design. Upgrade to our premium plan to analyze more rooms.
+            </p>
+            <CustomButton 
+              onClick={() => window.location.href = '/#pricing'}
+              variant="default"
+            >
+              View Pricing Plans
+            </CustomButton>
+          </div>
+        ) : image ? (
           <div className="relative group">
             <img 
               src={image} 

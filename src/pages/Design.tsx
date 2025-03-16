@@ -5,7 +5,7 @@ import UploadRoom from "../components/design/UploadRoom";
 import DesignSuggestion from "../components/design/DesignSuggestion";
 import SubscriptionDialog from "../components/design/SubscriptionDialog";
 import { CustomButton } from "../components/ui/CustomButton";
-import { ArrowRight, Wand, Crown } from "lucide-react";
+import { ArrowRight, Wand, Crown, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   hasUsedFreeTrial, 
@@ -23,24 +23,35 @@ const Design = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [freeTrialUsed, setFreeTrialUsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const checkAuth = requireAuth(navigate);
 
   useEffect(() => {
     const checkUserStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const authenticated = !!session;
-      setIsAuthenticated(authenticated);
-      
-      if (authenticated) {
-        const subscribed = await isUserSubscribed();
-        setIsSubscribed(subscribed);
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const authenticated = !!session;
+        setIsAuthenticated(authenticated);
         
-        const trialUsed = await hasUsedFreeTrial();
-        setFreeTrialUsed(trialUsed);
-      } else {
-        setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
+        if (authenticated) {
+          const [subscribed, trialUsed] = await Promise.all([
+            isUserSubscribed(),
+            hasUsedFreeTrial()
+          ]);
+          
+          setIsSubscribed(subscribed);
+          setFreeTrialUsed(trialUsed);
+        } else {
+          setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
+        }
+      } catch (error) {
+        console.error("Error checking user status:", error);
+        toast.error("Failed to check subscription status");
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -61,22 +72,33 @@ const Design = () => {
     }
   }, [freeTrialUsed, isSubscribed, uploadedImage]);
 
-  const handleImageUploaded = async (imageUrl: string, file: File) => {
+  const handleImageUploaded = async (imageUrl: string, file?: File) => {
     if (!isAuthenticated) {
       toast.info("Please log in to upload images");
       navigate('/auth');
       return;
     }
     
-    if (isSubscribed || !freeTrialUsed) {
-      if (!freeTrialUsed) {
+    const [trialUsed, subscribed] = await Promise.all([
+      hasUsedFreeTrial(),
+      isUserSubscribed()
+    ]);
+    
+    setFreeTrialUsed(trialUsed);
+    setIsSubscribed(subscribed);
+    
+    if (subscribed || !trialUsed) {
+      if (!trialUsed) {
         await markFreeTrialAsUsed();
         setFreeTrialUsed(true);
+        localStorage.setItem('freeDesignUsed', 'true');
       }
       
       setUploadedImage(imageUrl);
-      setUploadedFile(file);
+      if (file) setUploadedFile(file);
+      
     } else {
+      toast.info("You've used your free design. Please upgrade to continue.");
       setShowSubscriptionDialog(true);
     }
   };
@@ -127,6 +149,12 @@ const Design = () => {
               <div className="flex items-center justify-center gap-2 text-amber-500 mb-4">
                 <Crown size={20} className="fill-amber-500" />
                 <span className="font-medium">Premium Member</span>
+              </div>
+            )}
+            {freeTrialUsed && !isSubscribed && (
+              <div className="flex items-center justify-center gap-2 text-amber-500 mb-4 bg-amber-50 py-2 px-4 rounded-md mx-auto max-w-fit">
+                <AlertTriangle size={20} className="text-amber-500" />
+                <span className="font-medium">Free trial used - Upgrade to continue</span>
               </div>
             )}
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
