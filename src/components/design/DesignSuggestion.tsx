@@ -104,7 +104,11 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
       }
     };
     
-    analyzeRoom();
+    const timer = setTimeout(() => {
+      analyzeRoom();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, [roomImage, originalFile]);
 
   const handlePrevious = () => {
@@ -121,7 +125,8 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
     toast.success(positive ? "Thanks for the positive feedback!" : "We'll improve our suggestions");
   };
 
-  const handleDownload = () => {
+  const handleDownload = (e: React.MouseEvent) => {
+    e.preventDefault();
     toast.success("Design recommendations saved!");
   };
 

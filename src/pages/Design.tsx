@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
@@ -26,11 +25,9 @@ const Design = () => {
   const [freeTrialUsed, setFreeTrialUsed] = useState(false);
   const navigate = useNavigate();
 
-  // Create auth check handler
   const checkAuth = requireAuth(navigate);
 
   useEffect(() => {
-    // Check authentication and subscription status
     const checkUserStatus = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       const authenticated = !!session;
@@ -43,14 +40,12 @@ const Design = () => {
         const trialUsed = await hasUsedFreeTrial();
         setFreeTrialUsed(trialUsed);
       } else {
-        // For non-authenticated users, check local storage
         setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
       }
     };
     
     checkUserStatus();
     
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
       checkUserStatus();
     });
@@ -61,64 +56,62 @@ const Design = () => {
   }, []);
 
   useEffect(() => {
-    // Show subscription dialog if user has used free trial and is not subscribed
     if (freeTrialUsed && !isSubscribed && !uploadedImage) {
       setShowSubscriptionDialog(true);
     }
   }, [freeTrialUsed, isSubscribed, uploadedImage]);
 
   const handleImageUploaded = async (imageUrl: string, file: File) => {
-    // First check if user is authenticated
     if (!isAuthenticated) {
       toast.info("Please log in to upload images");
       navigate('/auth');
       return;
     }
     
-    // Check if user is subscribed or hasn't used their free trial yet
     if (isSubscribed || !freeTrialUsed) {
-      // If this is their first time, mark free trial as used
       if (!freeTrialUsed) {
         await markFreeTrialAsUsed();
         setFreeTrialUsed(true);
       }
       
-      // Set the uploaded image
       setUploadedImage(imageUrl);
       setUploadedFile(file);
     } else {
-      // Show subscription dialog if they've used their free trial and aren't subscribed
       setShowSubscriptionDialog(true);
     }
   };
 
-  const handleRegenerate = async () => {
-    // Check if user is authenticated
+  const handleRegenerate = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
     if (!await checkAuth()) {
       return;
     }
     
-    // Check if user is subscribed or hasn't used their free trial
     if (isSubscribed || !freeTrialUsed) {
       if (uploadedFile) {
-        // Force re-render of DesignSuggestion component
         const tempImage = uploadedImage;
+        const tempFile = uploadedFile;
         setUploadedImage(null);
+        setUploadedFile(null);
+        
         setTimeout(() => {
           setUploadedImage(tempImage);
+          setUploadedFile(tempFile);
         }, 100);
       }
     } else {
-      // Show subscription dialog
       setShowSubscriptionDialog(true);
     }
   };
 
-  const scrollToPricing = () => {
+  const scrollToPricing = (e: React.MouseEvent) => {
+    e.preventDefault();
     navigate('/#pricing');
   };
 
-  const redirectToAuth = () => {
+  const redirectToAuth = (e: React.MouseEvent) => {
+    e.preventDefault();
     navigate('/auth');
   };
 

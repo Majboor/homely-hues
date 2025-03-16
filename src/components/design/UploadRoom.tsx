@@ -3,7 +3,6 @@ import { useState, useRef } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { Upload, X, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { analyzeRoomImage } from "../../services/interiorDesignApi";
 
 interface UploadRoomProps {
   onImageUploaded: (imageUrl: string, originalFile?: File) => void;
@@ -58,6 +57,7 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
         if (e.target?.result) {
           const imageUrl = e.target.result.toString();
           setImage(imageUrl);
+          // Make sure we're passing the file to the parent component
           onImageUploaded(imageUrl, file);
         }
       };
@@ -73,7 +73,10 @@ const UploadRoom = ({ onImageUploaded }: UploadRoomProps) => {
     }
   };
 
-  const removeImage = () => {
+  const removeImage = (e: React.MouseEvent) => {
+    // Prevent default behavior to avoid page refresh
+    e.preventDefault();
+    e.stopPropagation();
     setImage(null);
     if (inputRef.current) {
       inputRef.current.value = '';
