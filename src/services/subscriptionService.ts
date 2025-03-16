@@ -61,17 +61,43 @@ export const isUserSubscribed = async () => {
 export const hasUsedFreeTrial = async () => {
   // If not logged in, use the local storage value
   if (!(await isUserAuthenticated())) {
-    return localStorage.getItem('freeDesignUsed') === 'true';
+    const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
+    console.log("hasUsedFreeTrial - local storage value:", localTrialUsed);
+    return localTrialUsed;
   }
   
   try {
-    const subscription = await getUserSubscription();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    // If the user has a subscription, they've already used the free trial
-    if (subscription?.is_subscribed) {
+    if (!user) {
+      console.log("hasUsedFreeTrial - no user found, using local storage");
+      return localStorage.getItem('freeDesignUsed') === 'true';
+    }
+    
+    // Check the database
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No record found means trial has not been used yet
+        console.log("hasUsedFreeTrial - no record found for user", user.id);
+        return false;
+      }
+      throw error;
+    }
+    
+    // If subscription record exists, we need to determine if free trial was used
+    // If they're subscribed, it implies they've used the free trial
+    if (data && (data.is_subscribed || data.free_trial_used)) {
+      console.log("hasUsedFreeTrial - record found with is_subscribed:", data.is_subscribed, "free_trial_used:", data.free_trial_used);
       return true;
     }
     
+    console.log("hasUsedFreeTrial - record exists but free trial not marked as used");
     return false;
   } catch (error) {
     console.error('Error checking if free trial used:', error);
@@ -84,9 +110,11 @@ export const hasUsedFreeTrial = async () => {
  * Mark that the user has used their free trial
  */
 export const markFreeTrialAsUsed = async () => {
-  // Update local storage for fallback
+  // Update local storage for all users (fallback mechanism)
   localStorage.setItem('freeDesignUsed', 'true');
+  console.log("markFreeTrialAsUsed - updated local storage");
   
+  // If not authenticated, we can't update the database
   if (!(await isUserAuthenticated())) {
     return;
   }
@@ -98,10 +126,41 @@ export const markFreeTrialAsUsed = async () => {
       return;
     }
     
-    await supabase
+    console.log("markFreeTrialAsUsed - checking if record exists for user", user.id);
+    
+    // Check if a record already exists for this user
+    const { data, error: checkError } = await supabase
       .from('user_subscriptions')
-      .update({ is_subscribed: false })
-      .eq('user_id', user.id);
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (checkError && checkError.code !== 'PGRST116') {
+      throw checkError;
+    }
+    
+    if (data) {
+      // Update existing record
+      console.log("markFreeTrialAsUsed - updating existing record");
+      const { error: updateError } = await supabase
+        .from('user_subscriptions')
+        .update({ free_trial_used: true })
+        .eq('user_id', user.id);
+      
+      if (updateError) throw updateError;
+    } else {
+      // Create a new record
+      console.log("markFreeTrialAsUsed - creating new record");
+      const { error: insertError } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: user.id,
+          is_subscribed: false,
+          free_trial_used: true
+        });
+      
+      if (insertError) throw insertError;
+    }
   } catch (error) {
     console.error('Error marking free trial as used:', error);
   }
@@ -113,6 +172,24 @@ export const markFreeTrialAsUsed = async () => {
 export const isUserAuthenticated = async () => {
   const { data: { session } } = await supabase.auth.getSession();
   return !!session;
+};
+
+/**
+ * Redirect to auth page if user is not authenticated
+ * @returns boolean - true if user is authenticated, false if redirected
+ */
+export const requireAuth = (navigate) => {
+  return async () => {
+    const isAuthenticated = await isUserAuthenticated();
+    
+    if (!isAuthenticated) {
+      toast.info("Please log in to continue");
+      navigate('/auth');
+      return false;
+    }
+    
+    return true;
+  };
 };
 
 /**

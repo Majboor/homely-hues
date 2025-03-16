@@ -6,9 +6,16 @@ import UploadRoom from "../components/design/UploadRoom";
 import DesignSuggestion from "../components/design/DesignSuggestion";
 import SubscriptionDialog from "../components/design/SubscriptionDialog";
 import { CustomButton } from "../components/ui/CustomButton";
-import { ArrowRight, Wand, Crown } from "lucide-react";
+import { ArrowRight, Wand, Crown, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { hasUsedFreeTrial, markFreeTrialAsUsed, isUserSubscribed } from "../services/subscriptionService";
+import { 
+  hasUsedFreeTrial, 
+  markFreeTrialAsUsed, 
+  isUserSubscribed, 
+  isUserAuthenticated, 
+  requireAuth 
+} from "../services/subscriptionService";
+import { toast } from "sonner";
 
 const Design = () => {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -17,30 +24,45 @@ const Design = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [freeTrialUsed, setFreeTrialUsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  const checkAuth = requireAuth(navigate);
+
   useEffect(() => {
-    // Check authentication and subscription status
     const checkUserStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const authenticated = !!session;
-      setIsAuthenticated(authenticated);
-      
-      if (authenticated) {
-        const subscribed = await isUserSubscribed();
-        setIsSubscribed(subscribed);
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const authenticated = !!session;
+        setIsAuthenticated(authenticated);
         
-        const trialUsed = await hasUsedFreeTrial();
-        setFreeTrialUsed(trialUsed);
-      } else {
-        // For non-authenticated users, check local storage
-        setFreeTrialUsed(localStorage.getItem('freeDesignUsed') === 'true');
+        if (authenticated) {
+          const [subscribed, trialUsed] = await Promise.all([
+            isUserSubscribed(),
+            hasUsedFreeTrial()
+          ]);
+          
+          console.log("Design page - Free trial used:", trialUsed);
+          console.log("Design page - Is subscribed:", subscribed);
+          
+          setIsSubscribed(subscribed);
+          setFreeTrialUsed(trialUsed);
+        } else {
+          const localTrialUsed = localStorage.getItem('freeDesignUsed') === 'true';
+          console.log("Design page - Local storage free trial used:", localTrialUsed);
+          setFreeTrialUsed(localTrialUsed);
+        }
+      } catch (error) {
+        console.error("Error checking user status:", error);
+        toast.error("Failed to check subscription status");
+      } finally {
+        setIsLoading(false);
       }
     };
     
     checkUserStatus();
     
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async () => {
       checkUserStatus();
     });
@@ -51,52 +73,78 @@ const Design = () => {
   }, []);
 
   useEffect(() => {
-    // Show subscription dialog if user has used free trial and is not subscribed
     if (freeTrialUsed && !isSubscribed && !uploadedImage) {
       setShowSubscriptionDialog(true);
     }
   }, [freeTrialUsed, isSubscribed, uploadedImage]);
 
-  const handleImageUploaded = async (imageUrl: string, file: File) => {
-    // Check if user is subscribed or hasn't used their free trial yet
-    if (isSubscribed || !freeTrialUsed) {
-      // If this is their first time, mark free trial as used
-      if (!freeTrialUsed) {
+  const handleImageUploaded = async (imageUrl: string, file?: File) => {
+    if (!isAuthenticated) {
+      toast.info("Please log in to upload images");
+      navigate('/auth');
+      return;
+    }
+    
+    // Re-check the trial status before processing
+    const [trialUsed, subscribed] = await Promise.all([
+      hasUsedFreeTrial(),
+      isUserSubscribed()
+    ]);
+    
+    console.log("Before image upload - Free trial used:", trialUsed);
+    console.log("Before image upload - Is subscribed:", subscribed);
+    
+    setFreeTrialUsed(trialUsed);
+    setIsSubscribed(subscribed);
+    
+    if (subscribed || !trialUsed) {
+      if (!trialUsed) {
         await markFreeTrialAsUsed();
+        console.log("Marking free trial as used");
         setFreeTrialUsed(true);
+        localStorage.setItem('freeDesignUsed', 'true');
       }
       
-      // Set the uploaded image
       setUploadedImage(imageUrl);
-      setUploadedFile(file);
+      if (file) setUploadedFile(file);
+      
     } else {
-      // Show subscription dialog if they've used their free trial and aren't subscribed
+      toast.info("You've used your free design. Please upgrade to continue.");
       setShowSubscriptionDialog(true);
     }
   };
 
-  const handleRegenerate = async () => {
-    // Check if user is subscribed or hasn't used their free trial
+  const handleRegenerate = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (!await checkAuth()) {
+      return;
+    }
+    
     if (isSubscribed || !freeTrialUsed) {
       if (uploadedFile) {
-        // Force re-render of DesignSuggestion component
         const tempImage = uploadedImage;
+        const tempFile = uploadedFile;
         setUploadedImage(null);
+        setUploadedFile(null);
+        
         setTimeout(() => {
           setUploadedImage(tempImage);
+          setUploadedFile(tempFile);
         }, 100);
       }
     } else {
-      // Show subscription dialog
       setShowSubscriptionDialog(true);
     }
   };
 
-  const scrollToPricing = () => {
+  const scrollToPricing = (e: React.MouseEvent) => {
+    e.preventDefault();
     navigate('/#pricing');
   };
 
-  const redirectToAuth = () => {
+  const redirectToAuth = (e: React.MouseEvent) => {
+    e.preventDefault();
     navigate('/auth');
   };
 
@@ -112,6 +160,12 @@ const Design = () => {
               <div className="flex items-center justify-center gap-2 text-amber-500 mb-4">
                 <Crown size={20} className="fill-amber-500" />
                 <span className="font-medium">Premium Member</span>
+              </div>
+            )}
+            {freeTrialUsed && !isSubscribed && (
+              <div className="flex items-center justify-center gap-2 text-amber-500 mb-4 bg-amber-50 py-2 px-4 rounded-md mx-auto max-w-fit">
+                <AlertTriangle size={20} className="text-amber-500" />
+                <span className="font-medium">Free trial used - Upgrade to continue</span>
               </div>
             )}
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">

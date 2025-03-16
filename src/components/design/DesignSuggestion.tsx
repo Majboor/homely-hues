@@ -1,8 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { CustomButton } from "../ui/CustomButton";
 import { ThumbsUp, ThumbsDown, Download, ArrowRight, ArrowLeft, Loader2, Palette, Sofa, Lightbulb, Layout, FileImage, Wand } from "lucide-react";
 import { toast } from "sonner";
 import { analyzeRoomImage, RoomAnalysis } from "../../services/interiorDesignApi";
+import { isUserAuthenticated, isUserSubscribed, requireAuth } from "../../services/subscriptionService";
+import { useNavigate } from "react-router-dom";
 
 interface DesignSuggestionProps {
   roomImage: string;
@@ -14,6 +17,8 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
   const [currentIndex, setCurrentIndex] = useState(0);
   const [roomAnalysis, setRoomAnalysis] = useState<RoomAnalysis | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const navigate = useNavigate();
   
   useEffect(() => {
     const analyzeRoom = async () => {
@@ -23,8 +28,17 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
         console.log("Analyzing room with image:", roomImage);
         console.log("Original file available:", !!originalFile);
         
+        // Check authentication first
+        const authenticated = await isUserAuthenticated();
+        if (!authenticated) {
+          toast.info("Please log in to continue");
+          navigate('/auth');
+          return;
+        }
+        
         // For demonstration purposes, use mock data if originalFile is not available
         if (!originalFile) {
+          console.log("No original file available, using mock data");
           // This is just for development/preview purposes
           const mockData = {
             room_details: {
@@ -97,32 +111,98 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
         toast.success("Room analysis complete!");
       } catch (error) {
         console.error("Error analyzing room:", error);
-        setApiError("Failed to analyze room. Please try again later.");
-        toast.error("Failed to analyze room. Please try again later.");
+        setApiError("Failed to analyze room. Please try again with a different image.");
+        toast.error("Failed to analyze room. Please try again with a different image.");
+        
+        // If this is the first failure, retry once after a delay
+        if (retryCount === 0) {
+          setRetryCount(1);
+          toast.info("Retrying analysis...");
+          setTimeout(() => {
+            analyzeRoom();
+          }, 2000);
+        }
       } finally {
         setLoading(false);
       }
     };
     
-    analyzeRoom();
-  }, [roomImage, originalFile]);
+    const timer = setTimeout(() => {
+      analyzeRoom();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [roomImage, originalFile, navigate, retryCount]);
 
-  const handlePrevious = () => {
+  const handlePrevious = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!roomAnalysis) return;
     setCurrentIndex((prev) => (prev === 0 ? roomAnalysis.flashcards.length - 1 : prev - 1));
   };
 
-  const handleNext = () => {
+  const handleNext = (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!roomAnalysis) return;
     setCurrentIndex((prev) => (prev === roomAnalysis.flashcards.length - 1 ? 0 : prev + 1));
   };
 
-  const handleFeedback = (positive: boolean) => {
+  const handleFeedback = (positive: boolean, e: React.MouseEvent) => {
+    e.preventDefault();
     toast.success(positive ? "Thanks for the positive feedback!" : "We'll improve our suggestions");
   };
 
-  const handleDownload = () => {
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Check if user is authenticated and subscribed
+    const authenticated = await isUserAuthenticated();
+    if (!authenticated) {
+      toast.info("Please log in to download recommendations");
+      navigate('/auth');
+      return;
+    }
+    
+    const subscribed = await isUserSubscribed();
+    if (!subscribed) {
+      toast.info("Please upgrade to premium to download recommendations");
+      navigate('/#pricing');
+      return;
+    }
+    
     toast.success("Design recommendations saved!");
+  };
+
+  const handleTryAgain = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setApiError(null);
+    setRetryCount(0);
+    
+    const timer = setTimeout(() => {
+      if (originalFile) {
+        const tempImage = roomImage;
+        setRoomAnalysis(null);
+        
+        setTimeout(() => {
+          // Force re-analysis
+          setLoading(true);
+          analyzeRoomImage(originalFile)
+            .then(result => {
+              setRoomAnalysis(result);
+              toast.success("Room analysis complete!");
+            })
+            .catch(error => {
+              console.error("Error re-analyzing room:", error);
+              setApiError("Failed to analyze room. Please try with a different image.");
+              toast.error("Failed to analyze room. Please try with a different image.");
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        }, 100);
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
   };
 
   const getCardIcon = (title: string) => {
@@ -154,9 +234,12 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
           <p className="text-muted-foreground mb-4">
             {apiError}
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-6">
             Please try uploading a different image of your room or try again later.
           </p>
+          <CustomButton onClick={handleTryAgain}>
+            Try Again
+          </CustomButton>
         </div>
       </div>
     );
@@ -315,7 +398,7 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
             <CustomButton 
               variant="outline" 
               size="sm" 
-              onClick={() => handleFeedback(true)}
+              onClick={(e) => handleFeedback(true, e)}
             >
               <ThumbsUp className="h-4 w-4 mr-1" />
               Like
@@ -323,7 +406,7 @@ const DesignSuggestion = ({ roomImage, originalFile }: DesignSuggestionProps) =>
             <CustomButton 
               variant="outline" 
               size="sm" 
-              onClick={() => handleFeedback(false)}
+              onClick={(e) => handleFeedback(false, e)}
             >
               <ThumbsDown className="h-4 w-4 mr-1" />
               Dislike
