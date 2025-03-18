@@ -15,6 +15,11 @@ export interface BlogPost {
 
 const BLOG_API_URL = "https://blogsinterior.techrealm.online";
 
+// Clean the markdown by replacing escaped newlines with actual newlines
+const cleanMarkdown = (markdown: string): string => {
+  return markdown.replace(/\\n/g, "\n").trim();
+};
+
 export const fetchBlogPostBySlug = async (slug: string): Promise<BlogPost | null> => {
   try {
     const response = await fetch(`${BLOG_API_URL}/api/search_by_slug?slug=${slug}`);
@@ -26,7 +31,14 @@ export const fetchBlogPostBySlug = async (slug: string): Promise<BlogPost | null
       throw new Error(`Error fetching blog post: ${response.statusText}`);
     }
     
-    return await response.json();
+    const blogPost = await response.json();
+    
+    // Clean the markdown content
+    if (blogPost && blogPost.content) {
+      blogPost.content = cleanMarkdown(blogPost.content);
+    }
+    
+    return blogPost;
   } catch (error) {
     console.error("Error fetching blog post:", error);
     return null;

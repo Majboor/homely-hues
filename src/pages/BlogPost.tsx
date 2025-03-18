@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
 
 const BlogPost = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -111,8 +112,9 @@ const BlogPost = () => {
           </CardContent>
         </Card>
         
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
+        <div className="mt-8">
+          <Separator className="my-4" />
+          <p className="text-center text-gray-500 text-sm">
             Originally published at: <a 
               href={blogPost.url} 
               target="_blank" 

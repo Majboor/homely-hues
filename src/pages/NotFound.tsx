@@ -3,29 +3,61 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home } from "lucide-react";
+import { fetchBlogPostBySlug } from "@/services/blogService";
+import { useToast } from "@/hooks/use-toast";
 
 const NotFound = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isAttemptingRedirect, setIsAttemptingRedirect] = useState(false);
+  const { toast } = useToast();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-    
-    // Check if the path might be a blog post slug
-    const potentialSlug = location.pathname.substring(1); // Remove leading slash
-    if (potentialSlug && !isAttemptingRedirect) {
-      // We attempted a redirect to the blog page already but it failed
-      // (we're now on the 404 page), so we won't try again
-      setIsAttemptingRedirect(true);
-    }
-  }, [location.pathname, isAttemptingRedirect]);
+    const checkForBlogPost = async () => {
+      try {
+        // Extract the potential slug from the URL (remove leading slash)
+        const potentialSlug = location.pathname.substring(1);
+        
+        if (potentialSlug) {
+          console.log("Checking if slug exists as blog post:", potentialSlug);
+          const blogPost = await fetchBlogPostBySlug(potentialSlug);
+          
+          if (blogPost) {
+            console.log("Blog post found, redirecting to:", `/${potentialSlug}`);
+            // If a blog post exists with this slug, redirect to the blog page
+            navigate(`/${potentialSlug}`, { replace: true });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error checking for blog post:", error);
+        toast({
+          title: "Error",
+          description: "Failed to check if this page exists as a blog post",
+          variant: "destructive",
+        });
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkForBlogPost();
+  }, [location.pathname, navigate, toast]);
 
   const goBack = () => navigate(-1);
   
+  // Show a loading state while checking for blog posts
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center max-w-md px-4">
+          <h1 className="text-xl font-medium mb-4">Checking page...</h1>
+          <p className="text-gray-600 mb-4">We're checking if this content exists...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center max-w-md px-4">

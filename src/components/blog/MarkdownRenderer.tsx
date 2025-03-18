@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "@/lib/utils";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 interface MarkdownRendererProps {
   markdown: string;
@@ -7,43 +8,96 @@ interface MarkdownRendererProps {
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ markdown, className }) => {
-  // Clean up the markdown content
-  const cleanedMarkdown = markdown
-    .replace(/\\n/g, "\n") // Replace escaped newlines with actual newlines
-    .trim();
-  
   // Parse and convert markdown to HTML elements
   const renderMarkdown = () => {
     // Split content by lines for processing
-    const lines = cleanedMarkdown.split("\n");
+    const lines = markdown.split("\n");
     const elements: JSX.Element[] = [];
     let tableRows: string[][] = [];
     let inTable = false;
     let tableHeaders: string[] = [];
+    let listItems: JSX.Element[] = [];
+    let inList = false;
+    let listType: "ul" | "ol" = "ul";
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
       // Handle headings
       if (line.startsWith("# ")) {
+        if (inList) {
+          // Close any open list before starting a new heading
+          if (listType === "ul") {
+            elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+          } else {
+            elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+          }
+          listItems = [];
+          inList = false;
+        }
+        
         elements.push(
-          <h1 key={i} className="text-3xl font-bold mt-8 mb-4">{line.substring(2)}</h1>
+          <h1 key={i} className="text-3xl font-bold mt-8 mb-4">{renderLinks(line.substring(2))}</h1>
         );
       } else if (line.startsWith("## ")) {
+        if (inList) {
+          // Close any open list before starting a new heading
+          if (listType === "ul") {
+            elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+          } else {
+            elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+          }
+          listItems = [];
+          inList = false;
+        }
+        
         elements.push(
-          <h2 key={i} className="text-2xl font-semibold mt-6 mb-3">{line.substring(3)}</h2>
+          <h2 key={i} className="text-2xl font-semibold mt-6 mb-3">{renderLinks(line.substring(3))}</h2>
         );
       } else if (line.startsWith("### ")) {
+        if (inList) {
+          // Close any open list before starting a new heading
+          if (listType === "ul") {
+            elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+          } else {
+            elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+          }
+          listItems = [];
+          inList = false;
+        }
+        
         elements.push(
-          <h3 key={i} className="text-xl font-medium mt-5 mb-2">{line.substring(4)}</h3>
+          <h3 key={i} className="text-xl font-medium mt-5 mb-2">{renderLinks(line.substring(4))}</h3>
         );
       } else if (line.startsWith("#### ")) {
+        if (inList) {
+          // Close any open list before starting a new heading
+          if (listType === "ul") {
+            elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+          } else {
+            elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+          }
+          listItems = [];
+          inList = false;
+        }
+        
         elements.push(
-          <h4 key={i} className="text-lg font-medium mt-4 mb-2">{line.substring(5)}</h4>
+          <h4 key={i} className="text-lg font-medium mt-4 mb-2">{renderLinks(line.substring(5))}</h4>
         );
       } 
       // Handle table
       else if (line.startsWith("|") && line.endsWith("|")) {
+        if (inList) {
+          // Close any open list before starting a table
+          if (listType === "ul") {
+            elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+          } else {
+            elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+          }
+          listItems = [];
+          inList = false;
+        }
+        
         if (!inTable) {
           inTable = true;
           // Parse table headers
@@ -67,27 +121,27 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ markdown, className
         // If next line doesn't start with |, render the table
         if (!lines[i + 1]?.trim().startsWith("|") || i === lines.length - 1) {
           elements.push(
-            <div key={i} className="my-6 overflow-x-auto">
-              <table className="w-full border-collapse table-auto">
-                <thead>
-                  <tr className="bg-gray-100">
+            <div key={`table-${i}`} className="my-6 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
                     {tableHeaders.map((header, idx) => (
-                      <th key={idx} className="border px-4 py-2 text-left">{header}</th>
+                      <TableHead key={idx}>{renderLinks(header)}</TableHead>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {tableRows.map((row, rowIdx) => (
-                    <tr key={rowIdx} className={rowIdx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                    <TableRow key={rowIdx}>
                       {row.map((cell, cellIdx) => (
-                        <td key={cellIdx} className="border px-4 py-2">
+                        <TableCell key={cellIdx}>
                           {renderLinks(cell)}
-                        </td>
+                        </TableCell>
                       ))}
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           );
           inTable = false;
@@ -96,26 +150,97 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ markdown, className
         }
       }
       // Handle lists
-      else if (line.startsWith("* ")) {
-        elements.push(
-          <ul key={i} className="list-disc pl-6 my-2">
-            <li>{renderLinks(line.substring(2))}</li>
-          </ul>
-        );
-      } else if (line.startsWith("1. ")) {
-        elements.push(
-          <ol key={i} className="list-decimal pl-6 my-2">
-            <li>{renderLinks(line.substring(3))}</li>
-          </ol>
-        );
+      else if (line.startsWith("* ") || line.startsWith("- ")) {
+        const content = line.substring(2);
+        
+        if (!inList || listType !== "ul") {
+          // If we were in a different type of list, close it
+          if (inList) {
+            if (listType === "ol") {
+              elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+              listItems = [];
+            }
+          }
+          inList = true;
+          listType = "ul";
+        }
+        
+        listItems.push(<li key={`li-${i}`}>{renderLinks(content)}</li>);
+        
+        // If next line is not a list item, render the list
+        const nextLine = lines[i + 1]?.trim();
+        if (!nextLine || 
+            !(nextLine.startsWith("* ") || 
+              nextLine.startsWith("- ") || 
+              nextLine.startsWith("1. "))) {
+          elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+          listItems = [];
+          inList = false;
+        }
+      } else if (line.match(/^\d+\.\s/)) {
+        const content = line.substring(line.indexOf('.') + 2);
+        
+        if (!inList || listType !== "ol") {
+          // If we were in a different type of list, close it
+          if (inList) {
+            if (listType === "ul") {
+              elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+              listItems = [];
+            }
+          }
+          inList = true;
+          listType = "ol";
+        }
+        
+        listItems.push(<li key={`li-${i}`}>{renderLinks(content)}</li>);
+        
+        // If next line is not a list item, render the list
+        const nextLine = lines[i + 1]?.trim();
+        if (!nextLine || 
+            !(nextLine.startsWith("* ") || 
+              nextLine.startsWith("- ") || 
+              nextLine.match(/^\d+\.\s/))) {
+          elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+          listItems = [];
+          inList = false;
+        }
       }
       // Handle paragraphs (non-empty lines that don't match other patterns)
       else if (line.length > 0) {
+        if (inList) {
+          // Close any open list before starting a paragraph
+          if (listType === "ul") {
+            elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+          } else {
+            elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+          }
+          listItems = [];
+          inList = false;
+        }
+        
         elements.push(
-          <p key={i} className="my-4">
+          <p key={i} className="my-4 text-gray-800">
             {renderLinks(line)}
           </p>
         );
+      } else if (line.length === 0 && inList) {
+        // Empty line and we're in a list - close the list
+        if (listType === "ul") {
+          elements.push(<ul key={`ul-${i}`} className="list-disc pl-6 my-4">{listItems}</ul>);
+        } else {
+          elements.push(<ol key={`ol-${i}`} className="list-decimal pl-6 my-4">{listItems}</ol>);
+        }
+        listItems = [];
+        inList = false;
+      }
+    }
+    
+    // Close any remaining list at the end of the document
+    if (inList) {
+      if (listType === "ul") {
+        elements.push(<ul key="final-ul" className="list-disc pl-6 my-4">{listItems}</ul>);
+      } else {
+        elements.push(<ol key="final-ol" className="list-decimal pl-6 my-4">{listItems}</ol>);
       }
     }
     
@@ -124,7 +249,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ markdown, className
 
   // Helper to convert URLs to actual links
   const renderLinks = (text: string): React.ReactNode => {
-    // URL pattern that matches URLs starting with http or https
+    // Match URLs that might be in parentheses (markdown style) or standalone
     const urlPattern = /(https?:\/\/[^\s)]+)/g;
     
     // Split by URL pattern
