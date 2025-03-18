@@ -23,55 +23,58 @@ const BlogPost = () => {
       navigate("/not-found", { replace: true });
     }
     
-    // Update document title if we have a post
-    if (blogPost?.meta_tags?.title) {
-      document.title = blogPost.meta_tags.title;
-    } else {
-      document.title = "AI Interior Design | Free, No Sign Up, No Credit Card";
-    }
-    
-    // Update meta description
-    if (blogPost?.meta_tags?.description) {
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute("content", blogPost.meta_tags.description);
-      } else {
-        const meta = document.createElement("meta");
-        meta.name = "description";
-        meta.content = blogPost.meta_tags.description;
-        document.head.appendChild(meta);
-      }
-    }
-
-    // Set Open Graph and Twitter tags
-    const updateMetaTag = (property: string, content: string) => {
-      let meta = document.querySelector(`meta[property="${property}"]`);
-      if (!meta) {
-        meta = document.querySelector(`meta[name="${property}"]`);
+    // Update document title and meta tags using values from API
+    if (blogPost?.meta_tags) {
+      // Set document title if available
+      if (blogPost.meta_tags.title) {
+        document.title = blogPost.meta_tags.title;
       }
       
-      if (meta) {
-        meta.setAttribute("content", content);
-      } else {
-        const newMeta = document.createElement("meta");
-        if (property.startsWith("og:")) {
-          newMeta.setAttribute("property", property);
+      // Update meta description if available
+      if (blogPost.meta_tags.description) {
+        const metaDescription = document.querySelector('meta[name="description"]');
+        if (metaDescription) {
+          metaDescription.setAttribute("content", blogPost.meta_tags.description);
         } else {
-          newMeta.setAttribute("name", property);
+          const meta = document.createElement("meta");
+          meta.name = "description";
+          meta.content = blogPost.meta_tags.description;
+          document.head.appendChild(meta);
         }
-        newMeta.setAttribute("content", content);
-        document.head.appendChild(newMeta);
       }
-    };
 
-    const title = blogPost?.meta_tags?.title || "AI Interior Design | Free, No Sign Up, No Credit Card";
-    const description = blogPost?.meta_tags?.description || 
-      "Transform your space with our free AI interior design tool. No sign up or credit card required.";
+      // Set Open Graph and Twitter tags
+      const updateMetaTag = (property: string, content: string) => {
+        let meta = document.querySelector(`meta[property="${property}"]`);
+        if (!meta) {
+          meta = document.querySelector(`meta[name="${property}"]`);
+        }
+        
+        if (meta) {
+          meta.setAttribute("content", content);
+        } else {
+          const newMeta = document.createElement("meta");
+          if (property.startsWith("og:")) {
+            newMeta.setAttribute("property", property);
+          } else {
+            newMeta.setAttribute("name", property);
+          }
+          newMeta.setAttribute("content", content);
+          document.head.appendChild(newMeta);
+        }
+      };
 
-    updateMetaTag("og:title", title);
-    updateMetaTag("og:description", description);
-    updateMetaTag("twitter:title", title);
-    updateMetaTag("twitter:description", description);
+      // Use API-provided meta tags for OpenGraph and Twitter
+      if (blogPost.meta_tags.title) {
+        updateMetaTag("og:title", blogPost.meta_tags.title);
+        updateMetaTag("twitter:title", blogPost.meta_tags.title);
+      }
+      
+      if (blogPost.meta_tags.description) {
+        updateMetaTag("og:description", blogPost.meta_tags.description);
+        updateMetaTag("twitter:description", blogPost.meta_tags.description);
+      }
+    }
     
     return () => {
       // Reset defaults when component unmounts
