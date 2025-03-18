@@ -17,7 +17,15 @@ const BLOG_API_URL = "https://blogsinterior.techrealm.online";
 
 // Clean the markdown by replacing escaped newlines with actual newlines
 const cleanMarkdown = (markdown: string): string => {
-  return markdown.replace(/\\n/g, "\n").trim();
+  if (!markdown) return '';
+  
+  // Replace escaped newlines with actual newlines
+  let cleaned = markdown.replace(/\\n/g, "\n");
+  
+  // Fix any common markdown formatting issues
+  cleaned = cleaned.replace(/\n{3,}/g, "\n\n"); // Remove excessive newlines
+  
+  return cleaned.trim();
 };
 
 export const fetchBlogPostBySlug = async (slug: string): Promise<BlogPost | null> => {

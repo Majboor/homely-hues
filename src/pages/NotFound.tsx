@@ -2,7 +2,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home } from "lucide-react";
+import { ArrowLeft, Home, Loader2 } from "lucide-react";
 import { fetchBlogPostBySlug } from "@/services/blogService";
 import { useToast } from "@/hooks/use-toast";
 
@@ -13,6 +13,13 @@ const NotFound = () => {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
+    // Set default meta tags for 404 page
+    document.title = "Page Not Found | AI Interior Design";
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute("content", "Page not found. Try our free AI interior design tool - no sign up or credit card required.");
+    }
+
     const checkForBlogPost = async () => {
       try {
         // Extract the potential slug from the URL (remove leading slash)
@@ -51,6 +58,7 @@ const NotFound = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="text-center max-w-md px-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
           <h1 className="text-xl font-medium mb-4">Checking page...</h1>
           <p className="text-gray-600 mb-4">We're checking if this content exists...</p>
         </div>

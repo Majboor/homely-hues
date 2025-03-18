@@ -23,23 +23,67 @@ const BlogPost = () => {
       navigate("/not-found", { replace: true });
     }
     
-    // Update document title if we have a post
-    if (blogPost?.meta_tags?.title) {
-      document.title = blogPost.meta_tags.title;
-    }
-    
-    // Update meta description
-    if (blogPost?.meta_tags?.description) {
-      const metaDescription = document.querySelector('meta[name="description"]');
-      if (metaDescription) {
-        metaDescription.setAttribute("content", blogPost.meta_tags.description);
-      } else {
-        const meta = document.createElement("meta");
-        meta.name = "description";
-        meta.content = blogPost.meta_tags.description;
-        document.head.appendChild(meta);
+    // Update document title and meta tags using values from API
+    if (blogPost?.meta_tags) {
+      // Set document title if available
+      if (blogPost.meta_tags.title) {
+        document.title = blogPost.meta_tags.title;
+      }
+      
+      // Update meta description if available
+      if (blogPost.meta_tags.description) {
+        const metaDescription = document.querySelector('meta[name="description"]');
+        if (metaDescription) {
+          metaDescription.setAttribute("content", blogPost.meta_tags.description);
+        } else {
+          const meta = document.createElement("meta");
+          meta.name = "description";
+          meta.content = blogPost.meta_tags.description;
+          document.head.appendChild(meta);
+        }
+      }
+
+      // Set Open Graph and Twitter tags
+      const updateMetaTag = (property: string, content: string) => {
+        let meta = document.querySelector(`meta[property="${property}"]`);
+        if (!meta) {
+          meta = document.querySelector(`meta[name="${property}"]`);
+        }
+        
+        if (meta) {
+          meta.setAttribute("content", content);
+        } else {
+          const newMeta = document.createElement("meta");
+          if (property.startsWith("og:")) {
+            newMeta.setAttribute("property", property);
+          } else {
+            newMeta.setAttribute("name", property);
+          }
+          newMeta.setAttribute("content", content);
+          document.head.appendChild(newMeta);
+        }
+      };
+
+      // Use API-provided meta tags for OpenGraph and Twitter
+      if (blogPost.meta_tags.title) {
+        updateMetaTag("og:title", blogPost.meta_tags.title);
+        updateMetaTag("twitter:title", blogPost.meta_tags.title);
+      }
+      
+      if (blogPost.meta_tags.description) {
+        updateMetaTag("og:description", blogPost.meta_tags.description);
+        updateMetaTag("twitter:description", blogPost.meta_tags.description);
       }
     }
+    
+    return () => {
+      // Reset defaults when component unmounts
+      document.title = "AI Interior Design | Free, No Sign Up, No Credit Card";
+      const metaDescription = document.querySelector('meta[name="description"]');
+      if (metaDescription) {
+        metaDescription.setAttribute("content", "Transform your space with our free AI interior design tool. No sign up or credit card required. Get instant design recommendations powered by AI.");
+      }
+    };
   }, [blogPost, isLoading, navigate]);
 
   const handleShareClick = () => {
@@ -102,7 +146,7 @@ const BlogPost = () => {
         
         <Card className="overflow-hidden shadow-lg">
           <CardContent className="p-8">
-            {blogPost.meta_tags?.title && (
+            {blogPost?.meta_tags?.title && (
               <h1 className="text-3xl md:text-4xl font-bold mb-6">{blogPost.meta_tags.title}</h1>
             )}
             
@@ -116,12 +160,12 @@ const BlogPost = () => {
           <Separator className="my-4" />
           <p className="text-center text-gray-500 text-sm">
             Originally published at: <a 
-              href={blogPost.url} 
+              href={blogPost?.url} 
               target="_blank" 
               rel="noopener noreferrer" 
               className="text-blue-600 hover:underline"
             >
-              {blogPost.url}
+              {blogPost?.url}
             </a>
           </p>
         </div>
