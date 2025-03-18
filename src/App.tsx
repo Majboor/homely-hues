@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import PaymentCallback from "./pages/PaymentCallback";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
+import BlogPost from "./pages/BlogPost"; // Add the blog post page
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/payment-callback" element={<PaymentCallback />} />
           <Route path="/account" element={<Account />} />
+          <Route path="/:slug" element={<BlogPost />} /> {/* Catch-all route for blog posts */}
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
